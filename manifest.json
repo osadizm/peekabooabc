@@ -1,0 +1,17 @@
+{
+  "name": "หนูน้อยพร้อมเข้า ป.1",
+  "short_name": "พร้อมเข้า ป.1",
+  "description": "เกมฝึกภาษาอังกฤษ ภาษาไทย คณิตศาสตร์ และมิติสัมพันธ์ สำหรับเด็ก 5 ขวบ",
+  "lang": "th",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#cfeafb",
+  "theme_color": "#cfeafb",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
