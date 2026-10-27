@@ -358,6 +358,7 @@ canvas.trace{touch-action:none;background:#fff;border-radius:18px;border:3px das
 .tracecard .thbig{font-size:90px}
 .meter{height:14px;border-radius:999px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 2px var(--paper-line)}
 .meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+.bk{width:100%;min-height:70px;margin-top:8px;font:13px/1.4 ui-monospace,Menlo,monospace;border:2px solid var(--paper-line);border-radius:12px;padding:8px;color:var(--ink);background:#fff;word-break:break-all;resize:vertical;box-sizing:border-box}
 .ptabs{display:flex;gap:6px;flex-wrap:wrap}
 .ptabs button{padding:8px 14px;border-radius:999px;font-size:16px;background:var(--paper)}
 .ptabs button.on{background:var(--pink);color:#fff}
@@ -2398,7 +2399,65 @@ function parent(tab="report"){
   const done=el(`<div style="text-align:center;margin-top:8px"><button class="next">✅ เสร็จแล้ว กลับหน้าแรก</button></div>`);
   done.querySelector("button").onclick=home; app.append(done);
 }
-function pReport(){ app.append(reportPanel()); }
+function pReport(){ app.append(reportPanel()); app.append(backupPanel()); }
+
+/* backup code: everything this device saved (progress, stickers, settings) as one line of text,
+   so it can be moved to another phone or another web address */
+function makeBackup(){
+  save();
+  const json=JSON.stringify({v:1,at:today(),data:S});
+  const b64=btoa(unescape(encodeURIComponent(json)));
+  return "P1-"+b64;
+}
+function readBackup(code){
+  const t=String(code||"").replace(/\s+/g,"");
+  if(!t.startsWith("P1-")) throw new Error("format");
+  const obj=JSON.parse(decodeURIComponent(escape(atob(t.slice(3)))));
+  if(!obj||obj.v!==1||!obj.data||typeof obj.data!=="object") throw new Error("format");
+  return obj;
+}
+function backupPanel(){
+  const nSt=Object.values(S.stickers).reduce((a,b)=>a+b,0);
+  const p=el(`<div class="panel"><h3>💾 สำรองและย้ายข้อมูล</h3>
+    <p>ใช้ย้ายความก้าวหน้า สติกเกอร์ และการตั้งค่า ไปเครื่องอื่นหรือเว็บใหม่ ข้อมูลในเครื่องนี้: สติกเกอร์ ${nSt} ดวง · อ่านนิทานแล้ว ${Object.keys(S.storyBest).length} เรื่อง</p>
+    <h4>1. ที่เครื่องหรือเว็บเดิม: คัดลอกรหัส</h4>
+    <div class="row"><button class="chipbtn" id="mk" style="background:var(--pink);color:#fff">สร้างรหัสสำรอง</button><button class="chipbtn" id="cp" hidden>📋 คัดลอกรหัส</button></div>
+    <textarea id="bk-out" class="bk" readonly hidden aria-label="รหัสสำรองข้อมูล"></textarea>
+    <p class="note" id="mknote"></p>
+    <h4>2. ที่เครื่องหรือเว็บใหม่: วางรหัสแล้วกดกู้คืน</h4>
+    <textarea id="bk-in" class="bk" placeholder="วางรหัสที่ขึ้นต้นด้วย P1- ตรงนี้" aria-label="วางรหัสสำรองข้อมูล"></textarea>
+    <div class="row" style="margin-top:8px"><button class="chipbtn" id="rs" style="background:var(--sky-deep);color:#fff">กู้คืนข้อมูล</button></div>
+    <p class="note" id="rsnote"></p></div>`);
+  const out=p.querySelector("#bk-out"), cp=p.querySelector("#cp"), mn=p.querySelector("#mknote");
+  p.querySelector("#mk").onclick=()=>{
+    out.value=makeBackup(); out.hidden=false; cp.hidden=false;
+    mn.textContent="ได้รหัสแล้ว คัดลอกไปเก็บไว้ เช่น ส่งเข้าไลน์ของตัวเอง แล้วไปวางที่เว็บใหม่";
+  };
+  cp.onclick=()=>{
+    const done=()=>{ mn.textContent="คัดลอกแล้ว นำไปวางที่เว็บใหม่ได้เลย"; };
+    try{ navigator.clipboard.writeText(out.value).then(done).catch(()=>{ out.select(); mn.textContent="คัดลอกอัตโนมัติไม่ได้ กดค้างที่รหัสแล้วเลือก คัดลอก"; }); }
+    catch(e){ out.select(); mn.textContent="คัดลอกอัตโนมัติไม่ได้ กดค้างที่รหัสแล้วเลือก คัดลอก"; }
+  };
+  const rs=p.querySelector("#rs"), rn=p.querySelector("#rsnote");
+  rs.onclick=()=>{
+    let obj;
+    try{ obj=readBackup(p.querySelector("#bk-in").value); }
+    catch(e){ rn.textContent="รหัสไม่ถูกต้อง ตรวจว่าคัดลอกมาครบทั้งหมด และขึ้นต้นด้วย P1-"; return; }
+    const d=obj.data, st=Object.values(d.stickers||{}).reduce((a,b)=>a+b,0);
+    if(!rs.dataset.ask){
+      rs.dataset.ask=1; rs.textContent="แตะอีกครั้งเพื่อยืนยัน";
+      rn.textContent=`รหัสนี้มีสติกเกอร์ ${st} ดวง สำรองไว้เมื่อ ${obj.at} ข้อมูลในเครื่องนี้จะถูกแทนที่ด้วยข้อมูลจากรหัส`;
+      setTimeout(()=>{ if(rs.isConnected){ delete rs.dataset.ask; rs.textContent="กู้คืนข้อมูล"; } },6000);
+      return;
+    }
+    S = Object.assign({off:[], custom:[], upper:false, round:10, stats:{}, prog:{}, days:{}, stickers:{}, storyBest:{}}, d);
+    for(const k of ["stats","prog","days","stickers","storyBest"]) if(!S[k]||typeof S[k]!=="object"||Array.isArray(S[k])) S[k]={};
+    for(const k of ["off","custom","thOff","shapesOff","actOff"]) if(!Array.isArray(S[k])) S[k]=[];
+    OFF=new Set(S.off); save(); applyCase(); pickVoice();
+    parent("report"); toast(`กู้คืนข้อมูลแล้ว 🎉<br>สติกเกอร์ ${st} ดวง`);
+  };
+  return p;
+}
 
 function pGeneral(){
   const p=el(`<div class="panel"><h3>จำนวนข้อต่อรอบ</h3><p>ใช้กับทุกเกมในทุกวิชา</p></div>`);
