@@ -611,8 +611,23 @@ function shapeKinds(){ const k=Object.keys(SHAPES).filter(z=>!S.shapesOff.includ
 const EMOJI_SET = (()=>{ try{ const u=navigator.userAgent||""; return /Windows/.test(u) ? "win" : /iPhone|iPad|iPod|Macintosh/.test(u) ? "apple" : "other"; }catch(e){ return "other"; } })();
 const mark = (e, x, y, r=42, per) => { if(per && per[EMOJI_SET]) [x,y]=per[EMOJI_SET];
   return `<span class="mark">${e}<i style="left:${x}%;top:${y}%;width:${r}%;height:${r}%"></i></span>`; };
+/* hand-drawn picture for "knee" (the leg emoji faces a different way on each system) */
+const SK={skin:"#ffcd5a",shade:"#f2ad35",line:"#c98a1c",hi:"#ffe39a"};
+const limb=(d,w)=>`<path d="${d}" fill="none" stroke="${SK.line}" stroke-width="${w+6}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${SK.skin}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const ring=(cx,cy,rx,ry=rx)=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="#fff" stroke-width="8" opacity=".9"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="#ef4444" stroke-width="4.5"/>`;
+const KNEE_ART=`<svg class="shp drawn" viewBox="0 2 104 98" aria-hidden="true">
+    <!-- one smooth outline: thigh across the top, knee at the front-left, shin and calf down, foot pointing left -->
+    <path d="M92 13 L44 12 C24 11 13 22 15 38 C16 52 21 66 24 79 C17 81 9 84 7 89 C5 95 10 97 16 97 L48 97 C55 97 57 91 53 84 C50 79 48 74 48 68 C50 58 53 52 51 45 L92 46 C102 46 102 13 92 13 Z"
+      fill="${SK.skin}" stroke="${SK.line}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M48 18 L88 18" stroke="${SK.hi}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M54 41 L90 41" stroke="${SK.shade}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M47 50 C49 58 45 66 46 74" fill="none" stroke="${SK.shade}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M14 92 L46 92" stroke="${SK.shade}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M18 26 C22 20 30 19 34 24" fill="none" stroke="${SK.shade}" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M20 32 C24 28 30 28 33 31" fill="none" stroke="${SK.hi}" stroke-width="3" stroke-linecap="round"/>
+    ${ring(27,30,19)}</svg>`;
 const DRAWN = {
-  knee:     mark("🦵", 38, 24, 40, {win:[66,22], apple:[66,22]}),   /* 🦵: the knee is the bend where the thigh meets the shin (left on Android, right on Windows) */
+  knee:     KNEE_ART,
   elbow:    mark("💪", 21, 80, 40),   /* 💪: fist on top, forearm down the left side, elbow at the bottom-left corner */
   palm:     mark("✋", 50, 62, 46),
   cheek:    mark("🙂", 26, 62, 30),
