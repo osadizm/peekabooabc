@@ -55,6 +55,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .numpic i{display:flex;flex-wrap:wrap;justify-content:center;gap:.04em;max-width:.62em;margin-top:.12em}
 .numpic s{display:block;width:.1em;height:.1em;border-radius:50%;background:var(--sky)}
 .shp{width:1em;height:1em;vertical-align:middle;overflow:visible}
+.mark{position:relative;display:inline-block;line-height:1}
+.two{display:inline-block;white-space:nowrap;font-size:.62em;letter-spacing:-.05em}
+.mark i{position:absolute;transform:translate(-50%,-50%);border:.075em solid #ef4444;border-radius:50%;box-shadow:0 0 0 .025em #fff,inset 0 0 0 .02em #fff;pointer-events:none}
 .shadow{filter:brightness(0) opacity(.8)}
 .roam{position:relative;width:100%;height:clamp(180px,30vh,250px);border-radius:18px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 3px var(--paper-line)}
 .roam span{position:absolute;font-size:clamp(52px,8vw,76px);line-height:1}
@@ -522,7 +525,7 @@ canvas.trace{touch-action:none;background:#fff;border-radius:18px;border:3px das
 const CATS = [
  {id:"body",th:"ร่างกาย",en:"Body",icon:"🙂",q:"นี่คือ อวัยวะส่วนใด ?",words:[
   ["eye","👁️","ตา"],["ear","👂","หู"],["nose","👃","จมูก"],["mouth","👄","ปาก"],["teeth","🦷","ฟัน"],["tongue","👅","ลิ้น"],
-  ["hand","✋","มือ"],["arm","💪","แขน"],["leg","🦵","ขา"],["knee","d:knee","หัวเข่า"],["foot","🦶","เท้า"],["finger","☝️","นิ้ว"],["thumb","👍","นิ้วโป้ง"],
+  ["hand","✋","มือ"],["arm","💪","แขน"],["leg","🦵","ขา"],["knee","d:knee","หัวเข่า"],["elbow","d:elbow","ข้อศอก"],["palm","d:palm","ฝ่ามือ"],["cheek","d:cheek","แก้ม"],["chin","d:chin","คาง"],["forehead","d:forehead","หน้าผาก"],["body","🚶","ร่างกาย"],["feet","d:feet","เท้าทั้งสองข้าง"],["hands","🙌","มือทั้งสองข้าง"],["toes","d:toes","นิ้วเท้า"],["foot","🦶","เท้า"],["finger","☝️","นิ้ว"],["thumb","👍","นิ้วโป้ง"],
   ["nail","💅","เล็บ"],["face","🙂","ใบหน้า"],["hair","💇","ผม"],["brain","🧠","สมอง"],["heart","❤️","หัวใจ"],["bone","🦴","กระดูก"]]},
  {id:"animals",th:"สัตว์",en:"Animals",icon:"🐶",q:"นี่คือ สัตว์อะไร ?",words:[
   ["cat","🐱","แมว"],["dog","🐶","สุนัข"],["fish","🐟","ปลา"],["bird","🐦","นก"],["cow","🐮","วัว"],["pig","🐷","หมู"],
@@ -531,30 +534,35 @@ const CATS = [
   ["sheep","🐑","แกะ"],["goat","🐐","แพะ"],["mouse","🐭","หนู"],["owl","🦉","นกฮูก"],["bee","🐝","ผึ้ง"],["butterfly","🦋","ผีเสื้อ"],
   ["turtle","🐢","เต่า"],["crab","🦀","ปู"],["giraffe","🦒","ยีราฟ"],["zebra","🦓","ม้าลาย"],["penguin","🐧","เพนกวิน"],["shark","🦈","ฉลาม"],
   ["whale","🐳","วาฬ"],["dolphin","🐬","โลมา"],["panda","🐼","แพนด้า"],["camel","🐫","อูฐ"],["crocodile","🐊","จระเข้"],["snail","🐌","หอยทาก"],
-  ["spider","🕷️","แมงมุม"],["fox","🦊","สุนัขจิ้งจอก"]]},
+  ["spider","🕷️","แมงมุม"],["fox","🦊","สุนัขจิ้งจอก",
+  ["kangaroo","🦘","จิงโจ้"],["hippo","🦛","ฮิปโป"],["rhino","🦏","แรด"],["gorilla","🦍","กอริลลา"],["peacock","🦚","นกยูง"],["parrot","🦜","นกแก้ว"],["octopus","🐙","ปลาหมึกยักษ์"],["deer","🦌","กวาง"],["wolf","🐺","หมาป่า"],["koala","🐨","โคอาลา"],["bat","🦇","ค้างคาว"],["eagle","🦅","นกอินทรี"],["swan","🦢","หงส์"],["ladybug","🐞","เต่าทอง"],["hedgehog","🦔","เม่น"],["squirrel","🐿️","กระรอก"],["dinosaur","🦕","ไดโนเสาร์"],["caterpillar","🐛","หนอน"]]]},
  {id:"things",th:"สิ่งของ",en:"Things",icon:"🎒",q:"นี่คือ อะไร ?",words:[
   ["ball","⚽","ลูกบอล"],["book","📖","หนังสือ"],["pencil","✏️","ดินสอ"],["pen","🖊️","ปากกา"],["bag","🎒","กระเป๋า"],["cup","☕","ถ้วย"],
   ["chair","💺","เก้าอี้"],["bed","🛏️","เตียง"],["clock","⏰","นาฬิกา"],["key","🔑","กุญแจ"],["box","📦","กล่อง"],["door","🚪","ประตู"],
   ["umbrella","☂️","ร่ม"],["phone","📱","โทรศัพท์"],["lamp","💡","หลอดไฟ"],["doll","🧸","ตุ๊กตา"],["spoon","🥄","ช้อน"],["bowl","🥣","ชาม"],
   ["scissors","✂️","กรรไกร"],["crayon","🖍️","สีเทียน"],["ruler","📏","ไม้บรรทัด"],["bell","🔔","กระดิ่ง"],["drum","🥁","กลอง"],["balloon","🎈","ลูกโป่ง"],
   ["brush","🖌️","พู่กัน"],["soap","🧼","สบู่"],["computer","💻","คอมพิวเตอร์"],["gift","🎁","ของขวัญ"],["broom","🧹","ไม้กวาด"],
-  ["basket","🧺","ตะกร้า"],["candle","🕯️","เทียน"],["camera","📷","กล้องถ่ายรูป"],["house","🏠","บ้าน"]]},
+  ["basket","🧺","ตะกร้า"],["candle","🕯️","เทียน"],["camera","📷","กล้องถ่ายรูป"],["house","🏠","บ้าน",
+  ["hammer","🔨","ค้อน"],["robot","🤖","หุ่นยนต์"],["puzzle","🧩","จิกซอว์"],["guitar","🎸","กีตาร์"],["piano","🎹","เปียโน"],["trumpet","🎺","ทรัมเป็ต"],["tent","⛺","เต็นท์"],["flag","🚩","ธง"],["lock","🔒","แม่กุญแจ"],["magnet","🧲","แม่เหล็ก"],["notebook","📓","สมุด"],["letter","✉️","จดหมาย"],["television","📺","โทรทัศน์"],["radio","📻","วิทยุ"],["battery","🔋","แบตเตอรี่"],["toilet","🚽","ส้วม"],["bathtub","🛁","อ่างอาบน้ำ"],["telescope","🔭","กล้องโทรทรรศน์"]]]},
  {id:"clothes",th:"เครื่องแต่งกาย",en:"Clothes",icon:"👕",q:"นี่คือ อะไร ?",words:[
   ["shirt","👕","เสื้อ"],["dress","👗","ชุดกระโปรง"],["pants","👖","กางเกง"],["socks","🧦","ถุงเท้า"],["shoes","👟","รองเท้า"],
   ["boots","👢","รองเท้าบูท"],["hat","👒","หมวก"],["cap","🧢","หมวกแก๊ป"],["glasses","👓","แว่นตา"],["coat","🧥","เสื้อโค้ท"],
-  ["gloves","🧤","ถุงมือ"],["scarf","🧣","ผ้าพันคอ"],["ring","💍","แหวน"],["watch","⌚","นาฬิกาข้อมือ"]]},
+  ["gloves","🧤","ถุงมือ"],["scarf","🧣","ผ้าพันคอ"],["ring","💍","แหวน"],["watch","⌚","นาฬิกาข้อมือ",
+  ["tie","👔","เนกไท"],["crown","👑","มงกุฎ"],["purse","👛","กระเป๋าสตางค์"],["handbag","👜","กระเป๋าถือ"],["helmet","⛑️","หมวกกันน็อก"],["sandals","👡","รองเท้าแตะ"],["swimsuit","👙","ชุดว่ายน้ำ"],["lipstick","💄","ลิปสติก"],["necklace","📿","สร้อยคอ"],["jacket","🥼","เสื้อคลุม"]]]},
  {id:"vehicles",th:"ยานพาหนะ",en:"Vehicles",icon:"🚗",q:"นี่คือ ยานพาหนะอะไร ?",words:[
   ["car","🚗","รถยนต์"],["bus","🚌","รถบัส"],["train","🚆","รถไฟ"],["plane","✈️","เครื่องบิน"],["boat","⛵","เรือ"],["ship","🚢","เรือใหญ่"],
   ["bike","🚲","จักรยาน"],["taxi","🚕","แท็กซี่"],["truck","🚚","รถบรรทุก"],["rocket","🚀","จรวด"],["helicopter","🚁","เฮลิคอปเตอร์"],
   ["van","🚐","รถตู้"],["tractor","🚜","รถแทรกเตอร์"],["motorbike","🏍️","มอเตอร์ไซค์"],["ambulance","🚑","รถพยาบาล"],
-  ["canoe","🛶","เรือแคนู"],["tram","🚋","รถราง"],["subway","🚇","รถไฟใต้ดิน"],["skateboard","🛹","สเก็ตบอร์ด"]]},
+  ["canoe","🛶","เรือแคนู"],["tram","🚋","รถราง"],["subway","🚇","รถไฟใต้ดิน"],["skateboard","🛹","สเก็ตบอร์ด",
+  ["police car","🚓","รถตำรวจ"],["fire truck","🚒","รถดับเพลิง"],["scooter","🛴","สกู๊ตเตอร์"],["speedboat","🚤","เรือเร็ว"],["cable car","🚡","กระเช้าลอยฟ้า"],["race car","🏎️","รถแข่ง"],["satellite","🛰️","ดาวเทียม"],["spaceship","🛸","ยานอวกาศ"],["sled","🛷","เลื่อนหิมะ"]]]},
  {id:"food",th:"ผลไม้และอาหาร",en:"Fruits & Food",icon:"🍎",q:"นี่คือ อะไร ?",words:[
   ["apple","🍎","แอปเปิล"],["banana","🍌","กล้วย"],["orange","🍊","ส้ม"],["grapes","🍇","องุ่น"],["mango","🥭","มะม่วง"],
   ["watermelon","🍉","แตงโม"],["strawberry","🍓","สตรอว์เบอร์รี"],["pineapple","🍍","สับปะรด"],["coconut","🥥","มะพร้าว"],
   ["lemon","🍋","มะนาว"],["cherry","🍒","เชอร์รี"],["pear","🍐","ลูกแพร์"],["peach","🍑","ลูกพีช"],["carrot","🥕","แครอท"],
   ["corn","🌽","ข้าวโพด"],["tomato","🍅","มะเขือเทศ"],["egg","🥚","ไข่"],["milk","🥛","นม"],["bread","🍞","ขนมปัง"],["rice","🍚","ข้าว"],
   ["cake","🍰","เค้ก"],["cookie","🍪","คุกกี้"],["candy","🍬","ลูกอม"],["cheese","🧀","ชีส"],["pizza","🍕","พิซซ่า"],
-  ["noodles","🍜","ก๋วยเตี๋ยว"],["tea","🍵","ชา"],["water","💧","น้ำ"],["honey","🍯","น้ำผึ้ง"]]},
+  ["noodles","🍜","ก๋วยเตี๋ยว"],["tea","🍵","ชา"],["water","💧","น้ำ"],["honey","🍯","น้ำผึ้ง",
+  ["potato","🥔","มันฝรั่ง"],["cucumber","🥒","แตงกวา"],["broccoli","🥦","บรอกโคลี"],["avocado","🥑","อะโวคาโด"],["kiwi","🥝","กีวี"],["melon","🍈","เมลอน"],["peanut","🥜","ถั่วลิสง"],["hamburger","🍔","แฮมเบอร์เกอร์"],["hot dog","🌭","ฮอตดอก"],["fries","🍟","เฟรนช์ฟรายส์"],["sandwich","🥪","แซนด์วิช"],["donut","🍩","โดนัท"],["popcorn","🍿","ป๊อปคอร์น"],["chocolate","🍫","ช็อกโกแลต"],["ice cream","🍦","ไอศกรีม"],["pancake","🥞","แพนเค้ก"],["salad","🥗","สลัด"],["soup","🍲","ซุป"]]]},
  {id:"colors",th:"สี",en:"Colors",icon:"🎨",q:"นี่คือ สีอะไร ?",words:[
   ["red","#ef4444","สีแดง"],["orange","#f97316","สีส้ม"],["yellow","#facc15","สีเหลือง"],["green","#22c55e","สีเขียว"],
   ["blue","#3b82f6","สีน้ำเงิน"],["purple","#a855f7","สีม่วง"],["pink","#f472b6","สีชมพู"],["brown","#92400e","สีน้ำตาล"],
@@ -569,11 +577,13 @@ const CATS = [
  {id:"nature",th:"ธรรมชาติ",en:"Nature",icon:"🌈",q:"นี่คือ อะไร ?",words:[
   ["sun","☀️","ดวงอาทิตย์"],["moon","🌙","ดวงจันทร์"],["star","⭐","ดาว"],["cloud","☁️","เมฆ"],["rain","🌧️","ฝน"],
   ["rainbow","🌈","รุ้ง"],["tree","🌳","ต้นไม้"],["flower","🌸","ดอกไม้"],["leaf","🍃","ใบไม้"],["sea","🌊","ทะเล"],
-  ["fire","🔥","ไฟ"],["snow","❄️","หิมะ"],["mountain","⛰️","ภูเขา"],["volcano","🌋","ภูเขาไฟ"],["earth","🌍","โลก"],["wind","🌬️","ลม"]]},
+  ["fire","🔥","ไฟ"],["snow","❄️","หิมะ"],["mountain","⛰️","ภูเขา"],["volcano","🌋","ภูเขาไฟ"],["earth","🌍","โลก"],["wind","🌬️","ลม",
+  ["desert","🏜️","ทะเลทราย"],["island","🏝️","เกาะ"],["cactus","🌵","ต้นกระบองเพชร"],["mushroom","🍄","เห็ด"],["shell","🐚","เปลือกหอย"],["lightning","⚡","ฟ้าผ่า"],["tornado","🌪️","พายุทอร์นาโด"],["rose","🌹","ดอกกุหลาบ"],["tulip","🌷","ดอกทิวลิป"],["sunflower","🌻","ดอกทานตะวัน"],["comet","☄️","ดาวหาง"]]]},
  {id:"people",th:"ครอบครัวและอาชีพ",en:"People",icon:"👪",q:"นี่คือ ใคร ?",words:[
   ["mother","👩","แม่"],["father","👨","พ่อ"],["baby","👶","ทารก"],["boy","👦","เด็กผู้ชาย"],["girl","👧","เด็กผู้หญิง"],
   ["grandma","👵","ย่า / ยาย"],["grandpa","👴","ปู่ / ตา"],["teacher","👩‍🏫","ครู"],["doctor","👩‍⚕️","หมอ"],["police","👮","ตำรวจ"],
-  ["farmer","👨‍🌾","ชาวนา"],["cook","👩‍🍳","พ่อครัว"],["pilot","👨‍✈️","นักบิน"],["firefighter","👨‍🚒","นักดับเพลิง"]]}
+  ["farmer","👨‍🌾","ชาวนา"],["cook","👩‍🍳","พ่อครัว"],["pilot","👨‍✈️","นักบิน"],["firefighter","👨‍🚒","นักดับเพลิง",
+  ["princess","👸","เจ้าหญิง"],["prince","🤴","เจ้าชาย"],["astronaut","👨‍🚀","นักบินอวกาศ"],["artist","👩‍🎨","ศิลปิน"],["singer","👩‍🎤","นักร้อง"],["scientist","👩‍🔬","นักวิทยาศาสตร์"],["student","👩‍🎓","นักเรียน"],["mechanic","👨‍🔧","ช่างซ่อม"],["builder","👷","คนงานก่อสร้าง"],["guard","💂","ทหารยาม"],["santa","🎅","ซานตาคลอส"]]]}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
 
@@ -596,15 +606,29 @@ const thName = x => (TH_SOUND[x.c] || x.c+"อ") + ", " + (TH_WORD_SOUND[x.c] ||
 const SHAPES = {circle:"วงกลม",square:"สี่เหลี่ยมจัตุรัส",rect:"สี่เหลี่ยมผืนผ้า",triangle:"สามเหลี่ยม",oval:"วงรี",star:"รูปดาว",heart:"รูปหัวใจ",diamond:"สี่เหลี่ยมขนมเปียกปูน"};
 function shapeKinds(){ const k=Object.keys(SHAPES).filter(z=>!S.shapesOff.includes(z)); return k.length>=2?k:Object.keys(SHAPES); }
 /* pictures that have no emoji, drawn by hand */
+/* body parts with no emoji of their own: a familiar emoji with a red ring on the part (x, y in % of the picture) */
+/* each system draws some emoji facing a different way, so a ring position can differ per system */
+const EMOJI_SET = (()=>{ try{ const u=navigator.userAgent||""; return /Windows/.test(u) ? "win" : /iPhone|iPad|iPod|Macintosh/.test(u) ? "apple" : "other"; }catch(e){ return "other"; } })();
+const mark = (e, x, y, r=42, per) => { if(per && per[EMOJI_SET]) [x,y]=per[EMOJI_SET];
+  return `<span class="mark">${e}<i style="left:${x}%;top:${y}%;width:${r}%;height:${r}%"></i></span>`; };
 const DRAWN = {
-  knee:`<svg class="shp drawn" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M28 10 L56 50 L44 84" fill="none" stroke="#a8724f" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M28 10 L56 50 L44 84" fill="none" stroke="#f5c9a3" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M42 86 L66 88" fill="none" stroke="#a8724f" stroke-width="16" stroke-linecap="round"/>
-    <path d="M42 86 L66 88" fill="none" stroke="#f5c9a3" stroke-width="10" stroke-linecap="round"/>
-    <circle cx="57" cy="50" r="16" fill="none" stroke="#ef4444" stroke-width="5"/>
-    <path d="M90 30 L76 42" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/><path d="M74 36 L76 42 L82 43" fill="none" stroke="#ef4444" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`
+  knee:     mark("🦵", 38, 24, 40, {win:[66,22], apple:[66,22]}),   /* 🦵: the knee is the bend where the thigh meets the shin (left on Android, right on Windows) */
+  elbow:    mark("💪", 21, 80, 40),   /* 💪: fist on top, forearm down the left side, elbow at the bottom-left corner */
+  palm:     mark("✋", 50, 62, 46),
+  cheek:    mark("🙂", 26, 62, 30),
+  chin:     mark("🙂", 50, 90, 30),
+  forehead: mark("🙂", 50, 18, 34),
+  /* 🦶 also faces a different way on each device, so the foot for "toes" is drawn here: heel left, toes right */
+  toes:     `<svg class="shp" viewBox="4 6 98 88" aria-hidden="true">
+    <path d="M18 8 L42 8 L44 46 Q62 48 80 52 Q98 56 98 70 Q98 86 82 86 L26 86 Q8 86 8 68 Q8 56 18 50 Z" fill="#ffcc4d" stroke="#e3a62b" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="90" cy="61" r="8.5" fill="#ffd966" stroke="#e3a62b" stroke-width="3"/>
+    <circle cx="78" cy="55" r="7" fill="#ffd966" stroke="#e3a62b" stroke-width="3"/>
+    <circle cx="67" cy="52" r="6" fill="#ffd966" stroke="#e3a62b" stroke-width="3"/>
+    <circle cx="57" cy="50" r="5.2" fill="#ffd966" stroke="#e3a62b" stroke-width="3"/>
+    <circle cx="48" cy="49" r="4.5" fill="#ffd966" stroke="#e3a62b" stroke-width="3"/>
+    <ellipse cx="70" cy="56" rx="31" ry="16" fill="none" stroke="#ef4444" stroke-width="5"/>
+  </svg>`,
+  feet:     `<span class="two">🦶🦶</span>`
 };
 const SHAPE_COLOR = {circle:"#ef4444",square:"#3b82f6",triangle:"#f59e0b",rect:"#22c55e",oval:"#a855f7",star:"#facc15",heart:"#f472b6",diamond:"#06b6d4"};
 const PALETTE = ["#ef4444","#3b82f6","#facc15","#22c55e","#a855f7","#f97316","#f472b6"];
@@ -1456,7 +1480,7 @@ function learn(cat){
     c.onclick=()=>{
       document.querySelectorAll(".card.spelling").forEach(k=>k.classList.remove("spelling"));
       c.classList.remove("talk"); void c.offsetWidth; c.classList.add("talk","spelling");
-      spell(x.w, [...c.querySelectorAll(".w span")], ()=>c.classList.remove("spelling"));
+      spell(x.w, [...c.querySelectorAll(".w span")], ()=>{ c.classList.remove("spelling"); later(()=>sayTH(x.t),250); });
     };
     grid.append(c);
   });
@@ -1654,7 +1678,7 @@ function distractWords(x, n, same=true){
   const out=[]; for(const o of pool){ if(out.length>=n) break; if(!out.some(z=>z.w===o.w)) out.push(o); } return out;
 }
 const wordOpts = (x, list) => shuffle([x,...list]).map(o=>({ok:o.w===x.w, html:`<span class="outline wt">${esc(o.w)}</span>`, say:o.w}));
-const wordReveal = x => ({big:pic(x.e), word:x.w, text:`<b class="wt">${esc(x.w)}</b> แปลว่า "${esc(x.t)}"`});
+const wordReveal = x => ({big:pic(x.e), word:x.w, th:x.t, text:`<b class="wt">${esc(x.w)}</b> แปลว่า "${esc(x.t)}"`});
 function nearNums(n, lo, hi, k=3){
   const s=new Set([n]); let guard=0;
   while(s.size<k+1 && guard++<200){ const d=pick1([-3,-2,-1,1,2,3]); const v=n+d; if(v>=lo&&v<=hi) s.add(v); }
@@ -2216,7 +2240,7 @@ function win(q){
     const nb=r.querySelector(".next");
     const showNext=()=>{ if(!nb.isConnected||!nb.classList.contains("wait")) return; nb.classList.remove("wait"); nb.removeAttribute("aria-hidden"); nb.removeAttribute("tabindex"); };
     setTimeout(showNext, R.word ? 3000 + R.word.length*1600 : 8000);
-    if(R.word){ const boxes=[...r.querySelectorAll(".letters b")]; say(first?"Great job!":"Good!",0.95,()=>spell(R.word,boxes,showNext)); }
+    if(R.word){ const boxes=[...r.querySelectorAll(".letters b")]; say(first?"Great job!":"Good!",0.95,()=>spell(R.word,boxes,()=>{ if(R.th) later(()=>sayTH(R.th,showNext),250); else showNext(); })); }
     else if(R.sayEN) say(first?"Great job!":"Good!",0.95,()=>say(R.sayEN,0.8,showNext));
     else sayTH(first?"เก่งมาก":"ถูกแล้ว", ()=>{ if(R.sayTH) setTimeout(()=>sayTH(R.sayTH,showNext),250); else showNext(); });
     nb.onclick=()=>{ if(nb.classList.contains("wait")) return; hush(); G.i++; G.i<G.round ? showQ() : finish(); };
