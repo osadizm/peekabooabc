@@ -184,6 +184,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .seq b{font-family:var(--display);font-weight:700;font-size:clamp(34px,5.6vw,54px);width:1.5em;height:1.5em;display:grid;place-items:center;background:#fff;border-radius:14px;box-shadow:0 4px 0 var(--paper-line);color:var(--ink)}
 .seq b.qm{border:3px dashed var(--pink);color:var(--pink);box-shadow:none}
 .patt{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;font-size:clamp(34px,5.4vw,54px);line-height:1}
+.patt .hl{display:inline-block;border-radius:10px;background:#fff3c4;box-shadow:0 0 0 3px #f2b84b}
+.pair2{display:inline-flex;align-items:center;gap:.08em;font-size:.6em;white-space:nowrap}
+.pair2 b{font-family:var(--display);font-size:.45em;color:var(--pink-deep);background:#fff;border-radius:50%;width:1.4em;height:1.4em;display:inline-grid;place-items:center;margin-left:.15em}
 .patt .qm{display:inline-grid;place-items:center;width:1.15em;height:1.15em;border:3px dashed var(--pink);border-radius:12px;background:#fff;color:var(--pink);font-family:var(--display);font-weight:700;font-size:.8em}
 .model{display:flex;flex-direction:column;align-items:center;gap:6px}
 .model .lbl{font-size:18px;background:#fff;padding:2px 12px;border-radius:999px}
@@ -1994,18 +1997,41 @@ const ACTS = {
         opts:shuffle([odd,...three]).map(o=>({ok:o===odd,html:pic(o.e),sayTH:o.t})),
         reveal:{big:pic(odd.e),text:`${esc(odd.t)} เป็น${CAT[B].th}<br>ส่วนภาพอื่นเป็น${CAT[A].th}`,sayTH:`${odd.t} เป็น${CAT[B].th} ส่วนภาพอื่นเป็น${CAT[A].th}`}};
     }},
-  sp_pattern:{sub:"sp",icon:"🔁",th:"ภาพถัดไปคืออะไร",ds:"ดูแบบรูป แล้วหาภาพต่อไป",
+  sp_pattern:{sub:"sp",icon:"🔁",th:"แบบรูปที่หายไป",ds:"ดูแบบรูป แล้วหาภาพที่หายไป",
     gen:()=>{
-      const H=hard(), units = H ? ["AB","AAB","ABB","ABC","AABB","ABCC"] : ["AB","AB","AAB","ABB"];
+      const H=hard(), VH=vhard(), units = H ? ["AB","AAB","ABB","ABC","AABB","ABCC"] : ["AB","AB","AAB","ABB"];
       const u=pick1(units), k=new Set(u).size, nTok = H ? k+1 : k;
       let toks;
       if(Math.random()<.5){ const kinds=shuffle(["circle","square","triangle","star","heart"]), cols=shuffle(PALETTE); toks=Array.from({length:nTok},(_,i)=>shape(kinds[i],cols[i])); }
       else toks=shuffle(["🍎","🍌","🍇","🐶","🐱","🐟","⭐","🌙","🎈","🚗"]).slice(0,nTok);
-      const map={A:0,B:1,C:2}, L = H ? Math.max(6,u.length*2)+rnd(u.length) : u.length*3;
-      const seq=Array.from({length:L+1},(_,i)=>toks[map[u[i%u.length]]]), ans=seq[L];
-      return {key:"p"+u+L,lang:"th",q:"ภาพถัดไป คือภาพอะไร ?",stage:`<div class="patt">${seq.slice(0,L).join("")}<span class="qm">?</span></div>`,layout:"pics",
-        opts:shuffle(toks).map(t=>({ok:t===ans,html:t})),
-        reveal:{big:`<div class="patt">${seq.join("")}</div>`,text:"ถูกต้อง แบบรูปซ้ำกันแบบนี้",sayTH:"ถูกต้อง"}};
+      const map={A:0,B:1,C:2}, U=u.length, L = Math.max(H?7:6, U*3);
+      const seq=Array.from({length:L},(_,i)=>toks[map[u[i%U]]]);
+      /* blanks can be anywhere (start, middle or end) as long as every part of the repeating unit is still shown once */
+      const nBlank = VH && Math.random()<.6 ? 2 : 1;
+      let gaps;
+      for(let t=0;t<200;t++){
+        gaps = !H && Math.random()<.4 ? [L-1] : shuffle([...Array(L).keys()]).slice(0,nBlank).sort((x,y)=>x-y);
+        if(nBlank===2 && gaps[1]-gaps[0]<2) continue;            /* two separate gaps, not side by side */
+        const seen=new Set(); for(let i=0;i<L;i++) if(!gaps.includes(i)) seen.add(i%U);
+        if(seen.size===U) break;
+      }
+      const row=seq.map((t,i)=>gaps.includes(i)?`<span class="qm">?</span>`:t).join("");
+      const full=`<div class="patt">${seq.map((t,i)=>gaps.includes(i)?`<span class="hl">${t}</span>`:t).join("")}</div>`;
+      if(gaps.length===1){
+        const ans=seq[gaps[0]];
+        return {key:"p"+u+gaps,lang:"th",q:"ภาพที่หายไป คือภาพอะไร ?",stage:`<div class="patt">${row}</div>`,layout:"pics",
+          opts:shuffle(toks).map(t=>({ok:t===ans,html:t})),
+          reveal:{big:full,text:"ถูกต้อง แบบรูปซ้ำกันแบบนี้",sayTH:"ถูกต้อง"}};
+      }
+      /* two gaps: pick the pair in order (first ?, second ?) */
+      const ans=[seq[gaps[0]],seq[gaps[1]]], key=a=>a.join("|");
+      const cand=[]; for(const x of toks) for(const y of toks) cand.push([x,y]);
+      const ds=shuffle(cand.filter(c=>key(c)!==key(ans))); ds.sort((c1,c2)=>((c2[0]===ans[1]&&c2[1]===ans[0])?1:0)-((c1[0]===ans[1]&&c1[1]===ans[0])?1:0));
+      const pair=c=>`<span class="pair2"><b>1</b>${c[0]}<b>2</b>${c[1]}</span>`;
+      return {key:"p2"+u+gaps,lang:"th",q:"ช่อง ? ทั้ง 2 ช่อง คือภาพอะไร ?",sayQ:"ช่องที่หายไปทั้งสองช่อง คือภาพอะไร",
+        stage:`<div class="patt">${row.replace('<span class="qm">?</span>','<span class="qm">1</span>').replace('<span class="qm">?</span>','<span class="qm">2</span>')}</div><div class="hint">เลือกภาพของช่อง 1 และช่อง 2 ตามลำดับ</div>`,layout:"pics",
+        opts:shuffle([ans,...ds.slice(0,3)]).map(c=>({ok:key(c)===key(ans),html:pair(c)})),
+        reveal:{big:full,text:"ถูกต้อง เติมครบทั้ง 2 ช่อง",sayTH:"ถูกต้อง"}};
     }},
   sp_shadow:{sub:"sp",icon:"🌑",th:"เงาของอะไร",ds:"ดูเงา แล้วหาภาพที่ตรงกัน",
     gen:()=>{
