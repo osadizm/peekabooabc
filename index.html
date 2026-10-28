@@ -2254,7 +2254,14 @@ function win(q){
     /* the next button appears only once the answer has been read out (or after a safety wait if the device has no voice) */
     const nb=r.querySelector(".next");
     const showNext=()=>{ if(!nb.isConnected||!nb.classList.contains("wait")) return; nb.classList.remove("wait"); nb.removeAttribute("aria-hidden"); nb.removeAttribute("tabindex"); };
-    setTimeout(showNext, R.word ? 3000 + R.word.length*1600 : 8000);
+    /* safety net only: if speech stops reporting (no voice, a stuck browser), show the button after 3 quiet seconds.
+       It never fires while the device is still talking, however long the answer is. */
+    { let quiet=0, total=0; const wd=every(()=>{
+        if(!nb.isConnected||!nb.classList.contains("wait")){ clearInterval(wd); return; }
+        let busy=!!S.mute; try{ if(!S.mute) busy=speechSynthesis.speaking||speechSynthesis.pending; }catch(e){}   /* muted: the letters still light up on a timer, so wait for that */
+        quiet = busy ? 0 : quiet+500; total+=500;
+        if(quiet>=3000 || total>=60000){ clearInterval(wd); showNext(); }
+      },500); }
     if(R.word){ const boxes=[...r.querySelectorAll(".letters b")]; say(first?"Great job!":"Good!",0.95,()=>spell(R.word,boxes,()=>{ if(R.th) later(()=>sayTH(R.th,showNext),250); else showNext(); })); }
     else if(R.sayEN) say(first?"Great job!":"Good!",0.95,()=>say(R.sayEN,0.8,showNext));
     else sayTH(first?"เก่งมาก":"ถูกแล้ว", ()=>{ if(R.sayTH) setTimeout(()=>sayTH(R.sayTH,showNext),250); else showNext(); });
