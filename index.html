@@ -251,6 +251,39 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .prize.lost{background:#fff1f1;border-color:#f3b4b4}
 .sndbtn{width:46px;height:46px;border-radius:50%;flex:none;font-size:22px;background:#fff;box-shadow:0 3px 0 rgba(107,74,58,.15)}
 .toprow .sndbtn{width:40px;height:40px;font-size:19px;margin-right:auto}
+/* mini games */
+.pad.mini{margin:14px auto 0}
+.sudo{display:grid;grid-template-columns:repeat(4,1fr);gap:0;width:min(100%,380px);margin:0 auto;border:4px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff}
+.sudo .sc{aspect-ratio:1;max-width:100%;font-size:clamp(34px,9vw,52px);border:1px solid #d9cfc9;background:#fff;display:grid;place-items:center;line-height:1}
+.sudo .sc.br{border-right:3px solid var(--ink)}
+.sudo .sc.bb{border-bottom:3px solid var(--ink)}
+.sudo .sc.given{background:#fbf6f3}
+.sudo .sc.empty{background:#fff}
+.sudo .sc.sel{background:#fff3c4;box-shadow:inset 0 0 0 4px var(--pink)}
+.sudo .sc.ok{background:#effaf2;animation:pop .35s}
+.sudo .sc.no{animation:shake .4s;background:#fde4e4}
+.stray{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:12px;border-top:3px dashed #b9a79e;max-width:420px;margin:0 auto}
+.stray .pp{width:66px;height:66px;border-radius:12px;background:#fff;border:2px solid #d9cfc9;box-shadow:0 4px 0 rgba(107,74,58,.15);font-size:38px;transition:transform .15s}
+.stray .pp.sel{border:3px solid var(--pink);transform:translateY(-6px) rotate(-4deg);box-shadow:0 8px 0 rgba(217,87,122,.3)}
+.sudo .sc.can{background:#fffbe6}
+.xgrid{display:grid;grid-template-columns:repeat(5,auto);gap:6px;justify-content:center;align-items:center;margin:0 auto}
+.xgrid .xc{width:clamp(54px,14vw,72px);height:clamp(54px,14vw,72px);display:grid;place-items:center;background:#fff;border:3px solid var(--ink);border-radius:12px;font-family:var(--display);font-weight:700;font-size:clamp(26px,7vw,36px);color:var(--ink)}
+.xgrid .xc.hid{border-style:dashed;border-color:var(--pink);color:var(--pink)}
+.xgrid .xc.sel{background:#fff3c4;border-style:solid}
+.xgrid .xc.ok{border:3px solid var(--ok);color:#2f8a4b;background:#effaf2}
+.xgrid .xc.no{animation:shake .4s}
+.xgrid .xo{width:clamp(30px,7vw,40px);text-align:center;font-family:var(--display);font-weight:700;font-size:clamp(24px,6vw,32px);color:var(--pink-deep)}
+.bwrap{display:flex;justify-content:center;margin:4px 0 16px}
+.bboard{position:relative}
+.bslot{position:absolute;box-sizing:border-box;border:2px dashed #b9a79e;background:rgba(255,255,255,.75)}
+.btray{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start;min-height:80px;padding:12px;background:rgba(255,255,255,.55);border-radius:18px}
+.bpiece{position:relative;touch-action:none;cursor:grab;flex:none}
+.bpiece i{position:absolute;box-sizing:border-box;border:2px solid rgba(0,0,0,.25);border-radius:6px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+.bpiece.drag{z-index:60;cursor:grabbing;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.bpiece.placed{z-index:2}
+.cutq .blk{width:clamp(140px,26vw,200px);height:auto}
+.ticket .blk{width:auto;height:1.5em}
+.reveal .big .blk{height:1em;width:auto}
 /* stories */
 .stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .scard{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px 12px;border-radius:20px;background:#fff;border:3px solid #fff;box-shadow:0 5px 0 rgba(107,74,58,.12);transition:transform .15s}
@@ -1372,7 +1405,7 @@ function hub(sub){
     if(wk) add("🔁","ทบทวนคำที่ยังผิด",`มี ${wk} คำที่ควรฝึกอีก`,()=>start("en_review"),"review");
   }
   if(sub==="th" && actOn("th_learn")) add("📖","ท่อง ก–ฮ","แตะตัวอักษรเพื่อฟังเสียง",thaiLearn,"learn");
-  if(sub==="fun") Object.entries(FUNS).filter(([k])=>actOn("fun_"+k)).forEach(([k,f])=>{
+  Object.entries(FUNS).filter(([k,f])=>(f.home||"fun")===sub && actOn("fun_"+k)).forEach(([k,f])=>{
     const ok=!f.avail||f.avail(); add(f.icon,f.th, ok?f.ds:"ให้ผู้ปกครองเลือกคำหรือตัวอักษรเพิ่มก่อน", ()=>playFun(k), "", !ok); });
   Object.entries(ACTS).filter(([k,a])=>a.sub===sub && !a.hidden && actOn(k)).forEach(([k,a])=>{
     const ok = a.avail ? a.avail() : a.words ? (a.pool ? a.pool() : chosen("mix")).length>0 : true;
@@ -1586,6 +1619,18 @@ function scratchPad(st){
     cur.classList.toggle("ok",ok);
     if(ok){ hush(); sayTH(v); const next=boxes.find(x=>!x.classList.contains("ok")); if(next) pickBox(next); else { pad.hidden=true; boxes.forEach(x=>x.classList.remove("sel")); cur=null; } }
   });
+}
+/* cells on a square grid drawn as one solid shape with an outline (used for cut-out puzzles) */
+function blockSVG(cells,N,color,center){
+  const U=20, set=new Set(cells.map(c=>c+"")); let rects="", lines="";
+  let dx=0, dy=0;
+  if(center){ const h=Math.max(...cells.map(c=>c[0]))+1, w=Math.max(...cells.map(c=>c[1]))+1; dx=(N-w)*U/2; dy=(N-h)*U/2; }
+  for(const [r,c] of cells){
+    const x=c*U+dx, y=r*U+dy; rects+=`<rect x="${x}" y="${y}" width="${U+.6}" height="${U+.6}" fill="${color}"/>`;
+    if(!set.has((r-1)+","+c)) lines+=`M${x} ${y}h${U}`; if(!set.has((r+1)+","+c)) lines+=`M${x} ${y+U}h${U}`;
+    if(!set.has(r+","+(c-1))) lines+=`M${x} ${y}v${U}`; if(!set.has(r+","+(c+1))) lines+=`M${x+U} ${y}v${U}`;
+  }
+  return `<svg class="blk" viewBox="-3 -3 ${N*U+6} ${N*U+6}" aria-hidden="true">${rects}<path d="${lines}" stroke="#6b4a3a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>`;
 }
 /* =================== QUESTION GENERATORS =================== */
 function distractWords(x, n, same=true){
@@ -1914,6 +1959,32 @@ const ACTS = {
         opts:shuffle(opts).map(o=>({ok:o===right,html:`${o[1]?`<span class="oe">${pic(o[1])}</span>`:""}<span class="outline tx">${esc(o[0])}</span>`,sayTH:o[0]})),
         reveal:{big:right[1]?pic(right[1]):"✅",text:esc(right[0]),sayTH:right[0]}};
     }},
+  sp_cut:{sub:"sp",icon:"🧩",th:"หาชิ้นที่หายไป",ds:"ชิ้นไหนเติมรูปให้เต็มพอดี",
+    gen:()=>{
+      const H=hard(), VH=vhard(), N=H?4:3, size = !H ? 2+rnd(2) : VH ? 4+rnd(2) : 4;
+      const grow=(n,start)=>{ const cs=[start], has=new Set([start+""]);
+        while(cs.length<n){ const fr=[]; for(const [r,c] of cs) for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){ const a=r+dr,b=c+dc; if(a>=0&&b>=0&&a<N&&b<N&&!has.has(a+","+b)) fr.push([a,b]); }
+          const x=pick1(fr); cs.push(x); has.add(x+""); } return cs; };
+      const canon=cs=>{ let best=null, v=normCells(cs);
+        for(let m=0;m<2;m++){ for(let t=0;t<4;t++){ const k=JSON.stringify(normCells(v).sort((a,b)=>a[0]-b[0]||a[1]-b[1])); if(best===null||k<best) best=k; v=rotCells(v); } v=normCells(v.map(([r,c])=>[r,-c])); }
+        return best; };
+      const edge=[]; for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(r===0||c===0||r===N-1||c===N-1) edge.push([r,c]);
+      const piece=grow(size, pick1(edge)), key=canon(piece);
+      let shown=normCells(piece); if(VH){ for(let t=1+rnd(3);t>0;t--) shown=rotCells(shown); } else if(H && Math.random()<.5) shown=rotCells(shown);
+      const ds=[], seen=new Set([key]);
+      for(let t=0;t<300 && ds.length<3;t++){
+        /* same size when possible; if there are not enough different shapes of that size, use one cell more or less */
+        const n = (H && t<150) ? size : Math.max(2, size+pick1([-1,0,1,2]));
+        const d=grow(n,[rnd(N),rnd(N)]), dk=canon(d); if(seen.has(dk)) continue; seen.add(dk);
+        let dv=normCells(d); for(let r=rnd(4);r>0;r--) dv=rotCells(dv); ds.push(dv);
+      }
+      const hole=new Set(piece.map(c=>c+""));
+      const full=[]; for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(!hole.has(r+","+c)) full.push([r,c]);
+      return {key:"ct"+key,lang:"th",q:"ชิ้นไหน เติมรูปนี้ให้เต็มพอดี ?",sayQ:"ชิ้นไหน เติมรูปนี้ให้เต็มพอดี",
+        stage:`<div class="cutq">${blockSVG(full,N,"#f59e0b")}</div>${H?`<div class="hint">หมุนชิ้นส่วนในใจได้นะ</div>`:""}`,layout:"pics",
+        opts:shuffle([{c:shown,ok:true},...ds.map(c=>({c}))]).map(o=>({ok:!!o.ok,html:blockSVG(o.c,N,"#f59e0b",true)})),
+        reveal:{big:blockSVG(full.concat(piece),N,"#f59e0b"),text:"เติมแล้วเต็มพอดี",sayTH:"ถูกต้อง เติมแล้วเต็มพอดี"}};
+    }},
   sp_odd:{sub:"sp",icon:"🔍",th:"ภาพใดไม่เข้าพวก",ds:"หาภาพที่ต่างจากพวก",
     gen:()=>{
       const groups = hard() ? ["animals","food","vehicles","clothes","nature","body"] : ["animals","food","vehicles"];
@@ -2188,10 +2259,14 @@ const FUNS={
   mem_num:{th:"จับคู่ตัวเลข",icon:"🔢",ds:"เปิดการ์ดหาคู่ ตัวเลขกับจำนวน"},
   bal_abc:{th:"ลูกโป่ง ABC",icon:"🎈",ds:"ฟังชื่อตัวอักษร แล้วแตะลูกโป่ง",sound:true},
   bal_num:{th:"ลูกโป่งตัวเลข",icon:"🎈",ds:"ฟังตัวเลข แล้วแตะลูกโป่ง",sound:true},
+  mini_cross:{th:"ปริศนาตัวเลข",icon:"➕",ds:"เติมเลขให้บวกถูกทั้งแนวนอนและแนวตั้ง"},
+  mini_block:{th:"เติมบล็อกให้เต็ม",icon:"🧱",ds:"ลากชิ้นส่วนไปวางให้เต็มรูป"},
+  mini_sudo:{th:"ตารางภาพ",icon:"🐞",ds:"ตัดภาพไปแปะ ไม่ให้ซ้ำในแถวและคอลัมน์",home:"sp"},
   bal_word:{th:"ลูกโป่งคำศัพท์",icon:"🎈",ds:"ฟังคำ แล้วแตะลูกโป่งที่เขียนถูก",sound:true,avail:()=>uniqWords(7).length>=4}
 };
 function playFun(k){
   if(FUNS[k].sound && S.mute){ toast("เกมนี้ต้องฟังเสียง<br>แตะ 🔇 ที่มุมบนเพื่อเปิดเสียงก่อนนะ"); return; }
+  if(MINI[k]) return MINI[k](k);
   k.startsWith("mem") ? memory(k) : balloons(k);
 }
 function funFinish(k, good, line){
@@ -2200,12 +2275,13 @@ function funFinish(k, good, line){
   const pr=S.prog["fun_"+k]||(S.prog["fun_"+k]={r:0,t:0}); pr.t++; if(good) pr.r++;
   const got=[]; for(let i=0;i<(good?2:1);i++){ const fresh=STICKERS.filter(e=>!S.stickers[e]), e=pick1(fresh.length?fresh:STICKERS); S.stickers[e]=(S.stickers[e]||0)+1; got.push(e); }
   save();
-  screen({back:()=>hub("fun"),backLabel:"เกมสนุก"});
+  const home=FUNS[k].home||"fun";
+  screen({back:()=>hub(home),backLabel:SUBJ[home].th});
   const e=el(`<div class="end"><h2 class="outline">${good?"สุดยอดเลย!":"เก่งมาก!"}</h2><div class="big">${good?"⭐⭐⭐":"⭐⭐"}</div>
     <p style="font-size:20px;margin:0">${line}<br>${FUNS[k].th}</p>
     <div class="prize">ได้สติกเกอร์ <span class="st">${got.join(" ")}</span></div>
-    <div class="acts2"><button class="next">🔁 เล่นอีกครั้ง</button><button class="chipbtn" id="b2">📒 สมุดสติกเกอร์</button><button class="chipbtn" id="b3"><i class="chev l"></i>เกมสนุก</button></div></div>`);
-  e.querySelector(".next").onclick=()=>playFun(k); e.querySelector("#b2").onclick=stickerBook; e.querySelector("#b3").onclick=()=>hub("fun");
+    <div class="acts2"><button class="next">🔁 เล่นอีกครั้ง</button><button class="chipbtn" id="b2">📒 สมุดสติกเกอร์</button><button class="chipbtn" id="b3"><i class="chev l"></i>${SUBJ[home].th}</button></div></div>`);
+  e.querySelector(".next").onclick=()=>playFun(k); e.querySelector("#b2").onclick=stickerBook; e.querySelector("#b3").onclick=()=>hub(home);
   app.append(e); say(good?"Excellent!":"Well done!",0.9);
 }
 
@@ -2243,6 +2319,11 @@ function memory(k){
 }
 
 /* ---------- balloons: listen, then pop the right one ---------- */
+/* pairs that are easy to mix up, used as extra decoys while a balloon is being looked for */
+const LOOK_GROUPS=["bdpq","mnwu","ijl","ceo","hn","vwy","69","12","17","38","58","1114","1213","1517","1619","1020"];
+const LOOKALIKE=(a,b)=>{ a=String(a); b=String(b);
+  if(a.length>2||b.length>2){ return a.length===b.length && a[0]===b[0]; }
+  return LOOK_GROUPS.some(g=> g.length>4 ? false : g.includes(a)&&g.includes(b)) || LOOK_GROUPS.some(g=>g===a+b||g===b+a); };
 function balloons(k){
   screen({back:()=>hub("fun"),backLabel:"เกมสนุก"});
   let pool;
@@ -2259,10 +2340,12 @@ function balloons(k){
   const COLORS=["#ef7f9a","#6fb3d8","#f59e0b","#22c55e","#a855f7","#f97316","#06b6d4","#ec4899"];
   const spawn=(forceTarget)=>{
     if(done||!sky.isConnected) return;
-    const isT = forceTarget || (target && Math.random()<.35);
-    const it = isT && target ? target : pick1(pool.filter(p=>!target||p.id!==target.id));
+    /* mostly random balloons; the called one is just one of many, and look-alikes (b/d, 6/9) float too */
+    const r=Math.random(), like = target ? pool.filter(p=>p.id!==target.id && LOOKALIKE(p.id,target.id)) : [];
+    const isT = forceTarget || (target && r<.22);
+    const it = isT && target ? target : (like.length && r<.45) ? pick1(like) : pick1(pool.filter(p=>!target||p.id!==target.id));
     if(isT) lastTargetSpawn=Date.now();
-    const b=el(`<button class="bal ${still?"still":""}" aria-label="ลูกโป่ง"><span class="body ${it.cls}" style="--c:${pick1(COLORS)}">${it.html}</span></button>`);
+    const b=el(`<button class="bal ${still?"still":""}" aria-label="ลูกโป่ง"><span class="body ${it.cls}" style="--c:${pick1(COLORS)}">${it.html}</span></button>`); b._it=it;
     const w=sky.clientWidth||320, bw=it.cls?120:96;
     b.style.left=Math.round(Math.random()*Math.max(0,w-bw))+"px";
     if(still){ b.style.top=Math.round(10+Math.random()*55)+"%"; later(()=>b.remove(),5000); }
@@ -2281,9 +2364,19 @@ function balloons(k){
     };
     sky.append(b);
   };
-  const nextTarget=()=>{ if(done) return; let t; do{ t=pick1(pool); } while(pool.length>1 && target && t.id===target.id); target=t; target.speak(); later(()=>spawn(true),500); };
-  every(()=>{ spawn(false); if(target && Date.now()-lastTargetSpawn>3500) spawn(true); }, k==="bal_word"?1500:1200);
-  spawn(false); later(()=>spawn(false),500);
+  /* call out a balloon that is ALREADY in the sky (low enough to still be reachable), so nothing new pops up as a give-away */
+  const nextTarget=()=>{
+    if(done) return;
+    const sr=sky.getBoundingClientRect();
+    const onSky=[...sky.querySelectorAll(".bal:not(.pop)")].filter(b=>{ const r=b.getBoundingClientRect(); return r.top>sr.top+sr.height*.3 && r.bottom<sr.bottom+40; }).map(b=>b._it);
+    const cand=onSky.filter(t=>!target||t.id!==target.id);
+    let t = cand.length ? pick1(cand) : null;
+    if(!t){ do{ t=pick1(pool); } while(pool.length>1 && target && t.id===target.id); }
+    target=t; lastTargetSpawn = onSky.includes(t) ? Date.now() : 0; target.speak();
+  };
+  /* keep the sky busy; if the called balloon has not been seen for a while, it comes back at a random moment */
+  every(()=>{ spawn(false); if(target && Date.now()-lastTargetSpawn>5000+Math.random()*3000) spawn(true); }, k==="bal_word"?1100:850);
+  spawn(false); later(()=>spawn(false),300); later(()=>spawn(false),700); later(()=>spawn(false),1300); later(()=>spawn(false),1900);
   later(()=>sayTH("ฟังให้ดี แล้วแตะลูกโป่งที่ได้ยินนะ"), 300); later(nextTarget, 3200);
 }
 
@@ -2329,6 +2422,212 @@ function readStory(i){
   const pv=a.querySelector("#prev"), nx=a.querySelector("#nextst");
   if(pv) pv.onclick=()=>readStory(i-1);
   if(nx) nx.onclick=()=>readStory(i+1);
+}
+
+/* =================== MINI GAMES (sudoku, number cross, block puzzle) =================== */
+const MINI = { mini_sudo:sudoku, mini_cross:crossNum, mini_block:blockPuzzle };
+function miniHead(k, sub){
+  const home=FUNS[k].home||"fun";
+  screen({back:()=>hub(home),backLabel:SUBJ[home].th});
+  app.append(el(`<div class="hubhead"><h2 class="outline">${FUNS[k].icon} ${FUNS[k].th}</h2><p>${sub}</p></div>`));
+}
+function numPad(onKey){
+  const p=el(`<div class="pad mini">${[1,2,3,4,5,6,7,8,9,0].map(d=>`<button data-d="${d}">${d}</button>`).join("")}<button data-d="x" class="del">ลบ</button></div>`);
+  p.querySelectorAll("button").forEach(b=>b.onclick=()=>onKey(b.dataset.d)); return p;
+}
+
+/* ---------- picture sudoku 4x4: every row, column and 2x2 box holds each picture once ---------- */
+const SUDO_SETS=[["🐝","🐌","🕷️","🐞"],["🍎","🍌","🍇","🍓"],["🚗","🚌","🚲","✈️"],["🐶","🐱","🐰","🐸"],["⭐","🌙","☀️","☁️"],["🐟","🐙","🦀","🐢"]];
+function sudoFits(g,i,v){ const r=i>>2,c=i&3;
+  for(let k=0;k<4;k++) if(g[r*4+k]===v||g[k*4+c]===v) return false;
+  const br=r-r%2, bc=c-c%2; for(let a=0;a<2;a++) for(let b=0;b<2;b++) if(g[(br+a)*4+bc+b]===v) return false;
+  return true; }
+function sudoCount(g0){ const g=g0.slice(); let n=0;
+  const rec=()=>{ const i=g.indexOf(-1); if(i<0){ n++; return; } for(let v=0;v<4&&n<2;v++) if(sudoFits(g,i,v)){ g[i]=v; rec(); g[i]=-1; } };
+  rec(); return n; }
+function sudoMake(blanks){
+  const base=[[0,1,2,3],[2,3,0,1],[1,0,3,2],[3,2,1,0]], sym=shuffle([0,1,2,3]);
+  const perm=()=>{ let a=[...(Math.random()<.5?[0,1]:[1,0]),...(Math.random()<.5?[2,3]:[3,2])]; return Math.random()<.5?[a[2],a[3],a[0],a[1]]:a; };
+  const R=perm(), C=perm(), sol=[];
+  for(let r=0;r<4;r++) for(let c=0;c<4;c++) sol.push(sym[base[R[r]][C[c]]]);
+  const g=sol.slice();
+  for(const i of shuffle([...Array(16).keys()])){
+    if(g.filter(v=>v<0).length>=blanks) break;
+    const keep=g[i]; g[i]=-1; if(sudoCount(g)!==1) g[i]=keep;
+  }
+  return {sol,g};
+}
+function sudoku(k){
+  miniHead(k,"ตัดภาพด้านล่างไปแปะในช่องว่าง แต่ละแถว แต่ละคอลัมน์ และแต่ละช่องใหญ่ ต้องมีภาพไม่ซ้ำกัน");
+  const blanks = !hard() ? 5 : vhard() ? 9 : 7, pics=pick1(SUDO_SETS), {sol,g}=sudoMake(blanks);
+  const empties=g.map((v,i)=>v<0?i:-1).filter(i=>i>=0);
+  const info=el(`<div class="funinfo"><span>เหลือ <b id="sl">${empties.length}</b> ช่อง</span><span>พลาด <b id="sm">0</b> ครั้ง</span></div>`);
+  const grid=el(`<div class="sudo"></div>`), tray=el(`<div class="stray"></div>`);
+  app.append(info, grid, el(`<p class="hint" style="text-align:center;margin:12px 0 6px">แตะภาพด้านล่าง แล้วแตะช่องที่จะแปะ</p>`), tray);
+  let tile=null, miss=0, left=empties.length;
+  const cells=g.map((v,i)=>{
+    const r=i>>2,c=i&3;
+    const b=el(`<button class="sc ${v<0?"empty":"given"} ${c===1?"br":""} ${r===1?"bb":""}">${v<0?"":pics[v]}</button>`);
+    if(v<0) b.onclick=()=>drop(i);
+    grid.append(b); return b;
+  });
+  /* one cut-out picture for every empty square, in random order */
+  const tiles=shuffle(empties.map(i=>sol[i])).map(v=>{
+    const t=el(`<button class="pp">${pics[v]}</button>`); t._v=v;
+    t.onclick=()=>{ tile=(tile===t)?null:t; tray.querySelectorAll(".pp").forEach(x=>x.classList.toggle("sel",x===tile)); cells.forEach((c,i)=>c.classList.toggle("can",!!tile&&g[i]<0)); };
+    tray.append(t); return t;
+  });
+  const drop=i=>{
+    if(g[i]>=0) return;
+    if(!tile){ toast("แตะเลือกภาพด้านล่างก่อนนะ"); return; }
+    const cell=cells[i];
+    if(tile._v===sol[i]){
+      g[i]=tile._v; cell.textContent=pics[tile._v]; cell.classList.remove("empty","can"); cell.classList.add("ok"); cell.onclick=null;
+      tile.remove(); tile=null; cells.forEach(c=>c.classList.remove("can"));
+      left--; info.querySelector("#sl").textContent=left; hush();
+      if(!left){ sayTH("เก่งมาก ครบแล้ว"); later(()=>funFinish(k, miss<=2, `แปะภาพครบ ${blanks} ช่อง พลาด ${miss} ครั้ง`),1200); return; }
+      sayTH("ใช่แล้ว");
+    } else {
+      miss++; info.querySelector("#sm").textContent=miss; hush(); sayTH("ซ้ำกันนะ ลองช่องอื่น");
+      cell.classList.remove("no"); void cell.offsetWidth; cell.classList.add("no");
+    }
+  };
+}
+
+/* ---------- number cross: rows and columns are both sums
+     a + b = c
+     d + e = f      a+d=g, b+e=h, c+f=i
+     g + h = i                                              ---------- */
+function crossNum(k){
+  const M=Math.max(MAX(),8), H=hard(), VH=vhard(), hide = !H ? 3 : VH ? 5 : 4;
+  let v; do{ v={a:1+rnd(M/2),b:1+rnd(M/2),d:1+rnd(M/2),e:1+rnd(M/2)}; }while(v.a+v.b+v.d+v.e>M);
+  v.c=v.a+v.b; v.f=v.d+v.e; v.g=v.a+v.d; v.h=v.b+v.e; v.i=v.c+v.f;
+  const EQ=[["a","b","c"],["d","e","f"],["g","h","i"],["a","d","g"],["b","e","h"],["c","f","i"]];
+  const solvable=hid=>{ const known=new Set("abcdefghi".split("").filter(x=>!hid.includes(x))); let ch=true;
+    while(ch){ ch=false; for(const q of EQ){ const u=q.filter(x=>!known.has(x)); if(u.length===1){ known.add(u[0]); ch=true; } } }
+    return known.size===9; };
+  let hid; for(let t=0;t<200;t++){ hid=shuffle("abcdefghi".split("")).slice(0,hide); if(solvable(hid)) break; }
+  miniHead(k,"เติมตัวเลขในช่อง ? ให้บวกถูกทั้งแนวนอนและแนวตั้ง");
+  const info=el(`<div class="funinfo"><span>เหลือ <b id="cl">${hid.length}</b> ช่อง</span><span>พลาด <b id="cm">0</b> ครั้ง</span></div>`);
+  const L=[["a","+","b","=","c"],["+","","+","","+"],["d","+","e","=","f"],["=","","=","","="],["g","+","h","=","i"]];
+  const grid=el(`<div class="xgrid"></div>`), boxes={};
+  L.flat().forEach(t=>{
+    if(/^[a-i]$/.test(t)){
+      if(hid.includes(t)){ const b=el(`<button class="xc hid">?</button>`); b.dataset.k=t; b.onclick=()=>pick(t); boxes[t]=b; grid.append(b); }
+      else grid.append(el(`<div class="xc">${v[t]}</div>`));
+    } else grid.append(el(`<div class="xo">${t}</div>`));
+  });
+  let sel=null, typed="", miss=0, left=hid.length;
+  const pick=t=>{ if(!boxes[t]||boxes[t].classList.contains("ok")) return; sel=t; typed=""; Object.values(boxes).forEach(b=>b.classList.toggle("sel",b===boxes[t])); };
+  const pad=numPad(d=>{
+    if(!sel) return; const b=boxes[sel], ans=v[sel];
+    if(d==="x"){ typed=typed.slice(0,-1); b.textContent=typed||"?"; return; }
+    typed=(typed+d).replace(/^0(?=\d)/,""); b.textContent=typed;
+    if(+typed===ans){
+      b.classList.remove("sel"); b.classList.add("ok"); left--; info.querySelector("#cl").textContent=left; hush(); sayTH(String(ans));
+      if(!left){ sel=null; later(()=>funFinish(k, miss<=2, `เติมตัวเลขครบ ${hid.length} ช่อง พลาด ${miss} ครั้ง`),1100); return; }
+      const nx=hid.find(t=>!boxes[t].classList.contains("ok")); pick(nx);
+    } else if(typed.length>=String(ans).length){
+      miss++; info.querySelector("#cm").textContent=miss; hush(); sayTH("ยังไม่ใช่ ลองคิดใหม่นะ");
+      b.classList.remove("no"); void b.offsetWidth; b.classList.add("no"); typed=""; later(()=>{ if(!b.classList.contains("ok")) b.textContent="?"; },500);
+    }
+  });
+  app.append(info, grid, pad);
+  pick(hid[0]);
+}
+
+/* ---------- block puzzle: drag the pieces so they fill the outline ---------- */
+const BLOCK_COLORS=["#ef7f9a","#6fb3d8","#f59e0b","#22c55e","#a855f7","#f97316","#06b6d4","#ec4899"];
+function normCells(cs){ const mr=Math.min(...cs.map(c=>c[0])), mc=Math.min(...cs.map(c=>c[1])); return cs.map(([r,c])=>[r-mr,c-mc]); }
+function rotCells(cs){ const h=Math.max(...cs.map(c=>c[0])); return normCells(cs.map(([r,c])=>[c,h-r])); }
+function makeRegion(W,Hh,cut){
+  const inR=new Set(); for(let r=0;r<Hh;r++) for(let c=0;c<W;c++) inR.add(r+","+c);
+  const corners=shuffle([[0,0],[0,W-1],[Hh-1,0],[Hh-1,W-1],[0,1],[0,W-2]]);
+  for(const [r,c] of corners.slice(0,cut)) inR.delete(r+","+c);
+  return inR;
+}
+function partition(region, maxSize){
+  for(let t=0;t<300;t++){
+    const owner=new Map(), pieces=[]; let fail=false;
+    const keys=[...region].map(s=>s.split(",").map(Number)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    for(const [r,c] of keys){
+      if(owner.has(r+","+c)) continue;
+      const target=2+rnd(maxSize-1), cells=[[r,c]]; owner.set(r+","+c,pieces.length);
+      while(cells.length<target){
+        const fr=[]; for(const [a,b] of cells) for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){ const kk=(a+dr)+","+(b+dc); if(region.has(kk)&&!owner.has(kk)) fr.push([a+dr,b+dc]); }
+        if(!fr.length) break; const n=pick1(fr); owner.set(n[0]+","+n[1],pieces.length); cells.push(n);
+      }
+      if(cells.length<2){ fail=true; break; }
+      pieces.push(cells);
+    }
+    if(!fail && pieces.length>=2) return pieces;
+  }
+  return null;
+}
+function blockPuzzle(k){
+  const H=hard(), VH=vhard();
+  const W = !H ? 3 : VH ? 5 : 4, Hh = !H ? 3 : VH ? 4 : 3;
+  let region, parts;
+  for(let t=0;t<50 && !parts;t++){ region=makeRegion(W,Hh, !H?0:VH?2+rnd(2):1+rnd(2)); parts=partition(region, VH?5:4); }
+  miniHead(k, VH ? "ลากชิ้นส่วนไปวางให้เต็มรูป แตะชิ้นส่วนเพื่อหมุน" : "ลากชิ้นส่วนไปวางให้เต็มรูป");
+  const avail=Math.min(app.clientWidth||340, 560), cs=Math.max(40, Math.min(64, Math.floor((avail-24)/Math.max(W,4))));
+  const info=el(`<div class="funinfo"><span>วางแล้ว <b id="bp">0</b> / ${parts.length} ชิ้น</span></div>`);
+  const board=el(`<div class="bboard" style="width:${W*cs}px;height:${Hh*cs}px"></div>`);
+  for(const s of region){ const [r,c]=s.split(",").map(Number); board.append(el(`<div class="bslot" style="left:${c*cs}px;top:${r*cs}px;width:${cs}px;height:${cs}px"></div>`)); }
+  const tray=el(`<div class="btray"></div>`);
+  app.append(info, el(`<div class="bwrap"></div>`), tray);
+  app.querySelector(".bwrap").append(board);
+  const filled=new Map(); let placed=0, fails=0, done=false;
+  const pcs=parts.map((cells,i)=>{
+    let shape=normCells(cells); if(VH){ for(let n=rnd(4);n>0;n--) shape=rotCells(shape); }
+    return {i, shape, color:BLOCK_COLORS[i%BLOCK_COLORS.length], at:null, el:null};
+  });
+  const draw=pc=>{
+    const h=Math.max(...pc.shape.map(c=>c[0]))+1, w=Math.max(...pc.shape.map(c=>c[1]))+1;
+    pc.el.style.width=w*cs+"px"; pc.el.style.height=h*cs+"px";
+    pc.el.innerHTML=pc.shape.map(([r,c])=>`<i style="left:${c*cs}px;top:${r*cs}px;width:${cs}px;height:${cs}px;background:${pc.color}"></i>`).join("");
+  };
+  const toTray=pc=>{
+    if(pc.at){ pc.shape.forEach(([r,c])=>filled.delete((pc.at[0]+r)+","+(pc.at[1]+c))); pc.at=null; placed--; info.querySelector("#bp").textContent=placed; }
+    pc.el.classList.remove("placed"); pc.el.style.cssText=""; draw(pc); tray.append(pc.el);
+  };
+  const tryPlace=(pc,row,col)=>{
+    const keys=pc.shape.map(([r,c])=>(row+r)+","+(col+c));
+    if(!keys.every(kk=>region.has(kk)&&!filled.has(kk))) return false;
+    keys.forEach(kk=>filled.set(kk,pc.i)); pc.at=[row,col]; placed++; info.querySelector("#bp").textContent=placed;
+    pc.el.classList.add("placed"); pc.el.style.position="absolute"; pc.el.style.left=col*cs+"px"; pc.el.style.top=row*cs+"px"; pc.el.style.transform=""; board.append(pc.el);
+    return true;
+  };
+  pcs.forEach(pc=>{
+    pc.el=el(`<div class="bpiece" role="button" aria-label="ชิ้นส่วน"></div>`); draw(pc); tray.append(pc.el);
+    let start=null, dragging=false, off=[0,0], rect0=null;
+    pc.el.addEventListener("pointerdown",e=>{
+      if(done) return; start=[e.clientX,e.clientY]; dragging=false; rect0=pc.el.getBoundingClientRect(); off=[e.clientX-rect0.left,e.clientY-rect0.top];
+      try{ pc.el.setPointerCapture(e.pointerId); }catch(_){} e.preventDefault();
+    });
+    pc.el.addEventListener("pointermove",e=>{
+      if(!start) return;
+      if(!dragging && Math.hypot(e.clientX-start[0],e.clientY-start[1])>6){
+        dragging=true;
+        if(pc.at){ pc.shape.forEach(([r,c])=>filled.delete((pc.at[0]+r)+","+(pc.at[1]+c))); pc.at=null; placed--; info.querySelector("#bp").textContent=placed; pc.el.classList.remove("placed"); }
+        document.body.append(pc.el); pc.el.classList.add("drag");
+      }
+      if(dragging){ pc.el.style.position="fixed"; pc.el.style.left=(e.clientX-off[0])+"px"; pc.el.style.top=(e.clientY-off[1])+"px"; }
+    });
+    const end=e=>{
+      if(!start) return; const wasDrag=dragging; start=null; dragging=false; pc.el.classList.remove("drag");
+      if(!wasDrag){
+        if(pc.at){ toTray(pc); return; }
+        if(VH){ pc.shape=rotCells(pc.shape); draw(pc); }
+        return;
+      }
+      const br=board.getBoundingClientRect(), pr=pc.el.getBoundingClientRect();
+      const col=Math.round((pr.left-br.left)/cs), row=Math.round((pr.top-br.top)/cs);
+      if(!tryPlace(pc,row,col)){ fails++; toTray(pc); return; }
+      if(placed===pcs.length){ done=true; hush(); sayTH("เก่งมาก เต็มพอดีเลย"); later(()=>funFinish(k, fails<=3, `วางครบ ${pcs.length} ชิ้น`),1300); }
+    };
+    pc.el.addEventListener("pointerup",end); pc.el.addEventListener("pointercancel",end);
+  });
 }
 
 /* =================== STICKER BOOK =================== */
@@ -2477,7 +2776,7 @@ function pGeneral(){
   const g=el(`<div class="panel"><h3>เกมที่เปิดให้เล่น</h3><p>เกมที่ปิด (สีเทา) จะไม่แสดงให้ลูกเห็น เหมาะกับเรื่องที่ยังไม่ได้สอน</p></div>`);
   for(const [sub,s] of Object.entries(SUBJ)){
     const items = LEARN.filter(l=>l.sub===sub).map(l=>({key:l.id,label:l.th,icon:"📖",on:actOn(l.id)}))
-      .concat(sub==="fun" ? Object.entries(FUNS).map(([k,f])=>({key:"fun_"+k,label:f.th,icon:f.icon,on:actOn("fun_"+k)})) : [])
+      .concat(Object.entries(FUNS).filter(([k,f])=>(f.home||"fun")===sub).map(([k,f])=>({key:"fun_"+k,label:f.th,icon:f.icon,on:actOn("fun_"+k)})))
       .concat(Object.entries(ACTS).filter(([k,a])=>a.sub===sub&&!a.hidden).map(([k,a])=>({key:k,label:a.th,icon:a.icon,on:actOn(k)})));
     if(!items.length) continue;
     g.append(el(`<h4>${s.icon} ${s.th}</h4>`));
