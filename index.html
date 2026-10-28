@@ -1135,16 +1135,20 @@ const MAX = () => [5,10,20].includes(+S.maMax) ? +S.maMax : 10;
 const hard = () => S.spLevel!=="easy";
 const vhard = () => S.spLevel==="hard";
 /* groups of things whose outlines look alike (asym: they face one way, so a mirrored shadow is a fair trap) */
+/* groups of things whose outlines look alike but can still be told apart by their shadow
+   (asym: they face one way, so a mirrored shadow is a fair trap).
+   Never put two things with the same outline in one group: no balls (all circles), no apple and green apple,
+   no bear and panda, no pine tree and Christmas tree. */
 const SIMILAR = [
-  {e:["🐶","🐱","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐵","🐭","🐹","🐰","🦊"]},
-  {e:["🍎","🍅","🍊","🍑","🍏","🍐","🍋"]},
-  {e:["🚗","🚕","🚙","🚓","🚑","🚒","🚐","🚚","🚌"],asym:true},
-  {e:["🐟","🐠","🐡","🐬","🐳","🦈"],asym:true},
-  {e:["🐦","🐤","🐧","🦆","🦉","🐓","🦜"],asym:true},
-  {e:["🐞","🐝","🐜","🦋","🐛","🐌"],asym:true},
-  {e:["🌲","🌳","🌴","🌵","🎄","🌻","🌷"]},
-  {e:["⚽","🏀","🏈","⚾","🎾","🏐","🎱"]},
-  {e:["🐘","🦏","🦛","🐎","🐄","🐖","🐑","🐐","🦌","🐪"],asym:true}
+  {e:["🐶","🐱","🐰","🐵","🐷","🐮","🐻","🦊"]},
+  {e:["🍎","🍌","🍇","🍓","🍍","🍐","🍒","🍆"]},
+  {e:["🚗","🚕","🚑","🚒","🚌","🚚","🚜"],asym:true},
+  {e:["🐟","🐡","🐬","🐳","🦈","🐙"],asym:true},
+  {e:["🐦","🐧","🦆","🦉","🐓","🦜"],asym:true},
+  {e:["🐞","🐝","🐜","🦋","🐛","🐌","🕷️"],asym:true},
+  {e:["🌲","🌴","🌵","🌻","🌷","🍄"]},
+  {e:["🎈","🔔","🔑","✂️","☂️","🎸"]},
+  {e:["🐘","🦒","🐪","🐎","🐄","🐖","🐑","🦌"],asym:true}
 ];
 /* math level: easy = pictures, hard = numbers only + missing parts, mixed = either, chosen per question */
 const mHard = () => S.maLevel==="hard" || (S.maLevel==="mixed" && Math.random()<.5);
