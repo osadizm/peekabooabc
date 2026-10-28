@@ -522,7 +522,7 @@ canvas.trace{touch-action:none;background:#fff;border-radius:18px;border:3px das
 const CATS = [
  {id:"body",th:"ร่างกาย",en:"Body",icon:"🙂",q:"นี่คือ อวัยวะส่วนใด ?",words:[
   ["eye","👁️","ตา"],["ear","👂","หู"],["nose","👃","จมูก"],["mouth","👄","ปาก"],["teeth","🦷","ฟัน"],["tongue","👅","ลิ้น"],
-  ["hand","✋","มือ"],["arm","💪","แขน"],["leg","🦵","ขา"],["foot","🦶","เท้า"],["finger","☝️","นิ้ว"],["thumb","👍","นิ้วโป้ง"],
+  ["hand","✋","มือ"],["arm","💪","แขน"],["leg","🦵","ขา"],["knee","d:knee","หัวเข่า"],["foot","🦶","เท้า"],["finger","☝️","นิ้ว"],["thumb","👍","นิ้วโป้ง"],
   ["nail","💅","เล็บ"],["face","🙂","ใบหน้า"],["hair","💇","ผม"],["brain","🧠","สมอง"],["heart","❤️","หัวใจ"],["bone","🦴","กระดูก"]]},
  {id:"animals",th:"สัตว์",en:"Animals",icon:"🐶",q:"นี่คือ สัตว์อะไร ?",words:[
   ["cat","🐱","แมว"],["dog","🐶","สุนัข"],["fish","🐟","ปลา"],["bird","🐦","นก"],["cow","🐮","วัว"],["pig","🐷","หมู"],
@@ -595,6 +595,17 @@ const thName = x => (TH_SOUND[x.c] || x.c+"อ") + ", " + (TH_WORD_SOUND[x.c] ||
 /* shapes for math & patterns */
 const SHAPES = {circle:"วงกลม",square:"สี่เหลี่ยมจัตุรัส",rect:"สี่เหลี่ยมผืนผ้า",triangle:"สามเหลี่ยม",oval:"วงรี",star:"รูปดาว",heart:"รูปหัวใจ",diamond:"สี่เหลี่ยมขนมเปียกปูน"};
 function shapeKinds(){ const k=Object.keys(SHAPES).filter(z=>!S.shapesOff.includes(z)); return k.length>=2?k:Object.keys(SHAPES); }
+/* pictures that have no emoji, drawn by hand */
+const DRAWN = {
+  knee:`<svg class="shp drawn" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M28 10 L56 50 L44 84" fill="none" stroke="#a8724f" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M28 10 L56 50 L44 84" fill="none" stroke="#f5c9a3" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M42 86 L66 88" fill="none" stroke="#a8724f" stroke-width="16" stroke-linecap="round"/>
+    <path d="M42 86 L66 88" fill="none" stroke="#f5c9a3" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="57" cy="50" r="16" fill="none" stroke="#ef4444" stroke-width="5"/>
+    <path d="M90 30 L76 42" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/><path d="M74 36 L76 42 L82 43" fill="none" stroke="#ef4444" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`
+};
 const SHAPE_COLOR = {circle:"#ef4444",square:"#3b82f6",triangle:"#f59e0b",rect:"#22c55e",oval:"#a855f7",star:"#facc15",heart:"#f472b6",diamond:"#06b6d4"};
 const PALETTE = ["#ef4444","#3b82f6","#facc15","#22c55e","#a855f7","#f97316","#f472b6"];
 const COUNT_EMOJI = ["🍎","🐟","⭐","🎈","🐤","🍓","⚽","🌸","🚗","🐞","🍌","🧁"];
@@ -1296,6 +1307,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const app = document.getElementById("app");
 function pic(e){
   if(e && e[0]==="#") return `<span class="swatch" style="--c:${esc(e)}"></span>`;
+  if(e && e.startsWith("d:")) return DRAWN[e.slice(2)]||"❓";
   if(e && e.startsWith("s:")){ const k=e.slice(2); return shape(k, SHAPE_COLOR[k]||"#f472b6"); }
   if(e && e.startsWith("n:")){ const n=+e.slice(2); return `<span class="numpic"><b>${n}</b><i>${"<s></s>".repeat(n)}</i></span>`; }
   return esc(e||"❓");
