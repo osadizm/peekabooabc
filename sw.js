@@ -1,6 +1,6 @@
 // Keeps the game playable without internet.
 // Change VERSION whenever you upload new files, so phones fetch the update.
-const VERSION = "v33";
+const VERSION = "v34";
 const CACHE = "ready-p1-" + VERSION;
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 

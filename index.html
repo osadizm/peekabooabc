@@ -290,6 +290,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .cutq .blk{width:clamp(140px,26vw,200px);height:auto}
 .ticket .blk{width:auto;height:1.5em}
 .reveal .big .blk{height:1em;width:auto}
+/* word search */
+.wswrap{display:flex;gap:18px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.wsgrid{display:grid;grid-template-columns:repeat(var(--n),1fr);width:min(100%,460px);background:#fff;border:4px solid var(--ink);border-radius:14px;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+.wsc{aspect-ratio:1;max-width:100%;display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:clamp(20px,5.4vw,32px);color:var(--ink);border:1px solid #e6ddd8;cursor:pointer;transition:background .15s}
+.wsc.start{background:#fff3c4;box-shadow:inset 0 0 0 3px var(--pink)}
+.wsc.sel{background:#ffe9a8}
+.wsc.found{font-weight:700}
+.wsc.no{animation:shake .4s;background:#fde4e4}
+.wslist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,300px);align-content:start}
+.wsi{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:14px;background:#fff;box-shadow:0 3px 0 rgba(107,74,58,.15);text-align:left;min-width:0}
+.wsi .wsp{font-size:34px;line-height:1;flex:none}
+.wsi .wsw{font-family:var(--display);font-weight:600;font-size:19px;color:var(--pink-deep);overflow-wrap:anywhere;letter-spacing:.04em}
+.wsi.done{background:#effaf2;box-shadow:0 3px 0 var(--ok)}
+.wsi.done .wsw{color:#2f8a4b;text-decoration:line-through;text-decoration-thickness:3px}
 /* stories */
 .stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .scard{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px 12px;border-radius:20px;background:#fff;border:3px solid #fff;box-shadow:0 5px 0 rgba(107,74,58,.12);transition:transform .15s}
@@ -2343,6 +2357,7 @@ const FUNS={
   mem_num:{th:"จับคู่ตัวเลข",icon:"🔢",ds:"เปิดการ์ดหาคู่ ตัวเลขกับจำนวน"},
   bal_abc:{th:"ลูกโป่ง ABC",icon:"🎈",ds:"ฟังชื่อตัวอักษร แล้วแตะลูกโป่ง",sound:true},
   bal_num:{th:"ลูกโป่งตัวเลข",icon:"🎈",ds:"ฟังตัวเลข แล้วแตะลูกโป่ง",sound:true},
+  mini_ws:{th:"หาคำในตาราง",icon:"🔎",ds:"หาคำศัพท์ที่ซ่อนอยู่ในตารางตัวอักษร",home:"en",avail:()=>uniqWords(8).filter(x=>/^[a-z]+$/.test(x.w)&&x.w.length>=3).length>=8},
   mini_cross:{th:"ปริศนาตัวเลข",icon:"➕",ds:"เติมเลขให้บวกถูกทั้งแนวนอนและแนวตั้ง"},
   mini_block:{th:"เติมบล็อกให้เต็ม",icon:"🧱",ds:"ลากชิ้นส่วนไปวางให้เต็มรูป"},
   mini_sudo:{th:"ตารางภาพ",icon:"🐞",ds:"ตัดภาพไปแปะ ไม่ให้ซ้ำในแถวและคอลัมน์",home:"sp"},
@@ -2509,7 +2524,7 @@ function readStory(i){
 }
 
 /* =================== MINI GAMES (sudoku, number cross, block puzzle) =================== */
-const MINI = { mini_sudo:sudoku, mini_cross:crossNum, mini_block:blockPuzzle };
+const MINI = { mini_sudo:sudoku, mini_cross:crossNum, mini_block:blockPuzzle, mini_ws:wordSearch };
 function miniHead(k, sub){
   const home=FUNS[k].home||"fun";
   screen({back:()=>hub(home),backLabel:SUBJ[home].th});
@@ -2712,6 +2727,90 @@ function blockPuzzle(k){
     };
     pc.el.addEventListener("pointerup",end); pc.el.addEventListener("pointercancel",end);
   });
+}
+
+/* ---------- word search: find the pictured words hidden across (left to right) or down (top to bottom) ---------- */
+function wsBuild(N, words, dirs){
+  for(let attempt=0; attempt<60; attempt++){
+    const g=Array.from({length:N},()=>Array(N).fill("")), placed=[];
+    for(const x of shuffle(words).sort((a,b)=>b.w.length-a.w.length)){
+      const w=x.w; let ok=false;
+      for(let t=0;t<200 && !ok;t++){
+        const [dr,dc]=pick1(dirs), r0=rnd(N), c0=rnd(N), r1=r0+dr*(w.length-1), c1=c0+dc*(w.length-1);
+        if(r1<0||r1>=N||c1<0||c1>=N) continue;
+        let fits=true; for(let i=0;i<w.length;i++){ const ch=g[r0+dr*i][c0+dc*i]; if(ch && ch!==w[i]){ fits=false; break; } }
+        if(!fits) continue;
+        const cells=[]; for(let i=0;i<w.length;i++){ g[r0+dr*i][c0+dc*i]=w[i]; cells.push([r0+dr*i,c0+dc*i]); }
+        placed.push({x,cells}); ok=true;
+      }
+    }
+    if(placed.length===words.length){
+      /* fill the rest with letters, mostly ones used in the words so the hidden words don't stand out */
+      const used=words.map(x=>x.w).join(""), abc="abcdefghijklmnopqrstuvwxyz";
+      for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(!g[r][c]) g[r][c]= Math.random()<.5 ? pick1(used) : pick1(abc);
+      return {g,placed};
+    }
+  }
+  return null;
+}
+function wordSearch(k){
+  const H=hard(), VH=vhard();
+  const N = !H ? 6 : 8, count = !H ? 4 : VH ? 8 : 6;
+  const dirs = VH ? [[0,1],[1,0],[1,1]] : [[0,1],[1,0]];
+  const pool = uniqWords(N).filter(x=>/^[a-z]+$/.test(x.w) && x.w.length>=3);
+  let built=null, pickd=[];
+  for(let t=0;t<20 && !built;t++){ pickd=shuffle(pool).slice(0,count); built=wsBuild(N,pickd,dirs); }
+  if(!built){ toast("คำศัพท์ที่เลือกไว้ยังไม่พอ ลองเปิดคำเพิ่มในหน้าผู้ปกครอง"); hub(FUNS[k].home||"fun"); return; }
+  miniHead(k, VH ? "หาคำจากรูป คำซ่อนอยู่แนวนอน แนวตั้ง และแนวทแยง" : "หาคำจากรูป คำซ่อนอยู่แนวนอน (→) และแนวตั้ง (↓)");
+  const {g,placed}=built, COLORS=["#ffd166","#9be7b4","#a7d8ff","#ffb3c7","#d9b8ff","#ffc59e","#b8f0e8","#f6e58d"];
+  const info=el(`<div class="funinfo"><span>เจอแล้ว <b id="wf">0</b> / ${placed.length} คำ</span><span>แตะตัวแรก แล้วแตะตัวสุดท้าย หรือลากนิ้วผ่านคำ</span></div>`);
+  const wrap=el(`<div class="wswrap"></div>`), grid=el(`<div class="wsgrid" style="--n:${N}"></div>`), list=el(`<div class="wslist"></div>`);
+  const cells=[];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){ const d=el(`<div class="wsc wt" data-r="${r}" data-c="${c}">${g[r][c]}</div>`); cells.push(d); grid.append(d); }
+  const cellAt=(r,c)=>cells[r*N+c];
+  placed.forEach((p,i)=>{
+    const shown = VH ? `<span class="wsw wt">${"_ ".repeat(p.x.w.length).trim()}</span>` : `<span class="wsw wt">${esc(p.x.w)}</span>`;
+    p.item=el(`<button class="wsi"><span class="wsp">${pic(p.x.e)}</span>${shown}</button>`);
+    p.item.onclick=()=>{ hush(); say(p.x.w,0.8); };
+    p.color=COLORS[i%COLORS.length]; list.append(p.item);
+  });
+  wrap.append(grid,list); app.append(info,wrap);
+
+  let start=null, dragging=false, found=0, miss=0;
+  const line=(a,b)=>{ const dr=Math.sign(b[0]-a[0]), dc=Math.sign(b[1]-a[1]), len=Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]));
+    if(!(a[0]===b[0]||a[1]===b[1]||Math.abs(b[0]-a[0])===Math.abs(b[1]-a[1]))) return null;
+    return Array.from({length:len+1},(_,i)=>[a[0]+dr*i,a[1]+dc*i]); };
+  const paint=(path)=>{ cells.forEach(d=>d.classList.remove("sel","start")); if(path) path.forEach(([r,c])=>cellAt(r,c).classList.add("sel")); };
+  const check=(a,b)=>{
+    const path=line(a,b); paint(null);
+    if(!path || path.length<2) return;
+    const key=path.map(x=>x+"").join("|"), rev=[...path].reverse().map(x=>x+"").join("|");
+    const hit=placed.find(p=>!p.done && (p.cells.map(x=>x+"").join("|")===key || p.cells.map(x=>x+"").join("|")===rev));
+    if(hit){
+      hit.done=true; found++; info.querySelector("#wf").textContent=found;
+      hit.cells.forEach(([r,c])=>{ const d=cellAt(r,c); d.classList.add("found"); d.style.background=hit.color; });
+      hit.item.classList.add("done"); hit.item.querySelector(".wsw").textContent=hit.x.w;
+      hush(); say(hit.x.w,0.8,()=>later(()=>sayTH(hit.x.t),200));
+      if(found===placed.length) later(()=>funFinish(k, miss<=3, `หาเจอครบ ${placed.length} คำ`), 2600);
+    } else {
+      miss++; path.forEach(([r,c])=>{ const d=cellAt(r,c); d.classList.remove("no"); void d.offsetWidth; d.classList.add("no"); });
+      hush(); sayTH("ยังไม่ใช่ ลองใหม่นะ");
+    }
+  };
+  const rc=e=>{ const t=document.elementFromPoint(e.clientX,e.clientY); const d=t&&t.closest&&t.closest(".wsc"); return d&&grid.contains(d) ? [+d.dataset.r,+d.dataset.c] : null; };
+  let down=null;
+  grid.addEventListener("pointerdown",e=>{ const p=rc(e); if(!p) return; e.preventDefault(); down=p; dragging=false; try{ grid.setPointerCapture(e.pointerId); }catch(_){} });
+  grid.addEventListener("pointermove",e=>{ if(!down) return; const p=rc(e); if(!p) return;
+    if(p[0]!==down[0]||p[1]!==down[1]){ dragging=true; start=null; paint(line(down,p)); } });
+  const up=e=>{
+    if(!down) return; const p=rc(e)||down, d0=down; down=null;
+    if(dragging){ dragging=false; check(d0,p); return; }
+    /* tap: first tap marks the start, second tap the end */
+    if(!start){ start=p; paint(null); cellAt(p[0],p[1]).classList.add("start"); return; }
+    if(start[0]===p[0]&&start[1]===p[1]){ start=null; paint(null); return; }
+    const s0=start; start=null; check(s0,p);
+  };
+  grid.addEventListener("pointerup",up); grid.addEventListener("pointercancel",()=>{ down=null; dragging=false; paint(null); });
 }
 
 /* =================== STICKER BOOK =================== */
