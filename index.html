@@ -302,6 +302,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .wsi{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:14px;background:#fff;box-shadow:0 3px 0 rgba(107,74,58,.15);text-align:left;min-width:0}
 .wsi .wsp{font-size:34px;line-height:1;flex:none}
 .wsi .wsw{font-family:var(--display);font-weight:600;font-size:19px;color:var(--pink-deep);overflow-wrap:anywhere;letter-spacing:.04em}
+.wsside{display:flex;flex-direction:column;gap:10px;width:min(100%,320px)}
+.wslist{width:100%!important}
+.wsi .blanks{letter-spacing:.18em;white-space:nowrap;font-size:.95em}
+.wsi.peek{box-shadow:0 3px 0 #f2b84b;background:#fff8e1}
+.wspeek{align-self:flex-start}
+.wspeek.on{background:#fff3c4}
 .wsi.done{background:#effaf2;box-shadow:0 3px 0 var(--ok)}
 .wsi.done .wsw{color:#2f8a4b;text-decoration:line-through;text-decoration-thickness:3px}
 /* stories */
@@ -1233,6 +1239,8 @@ const thOn = x => !S.thOff.includes(x.c);
 const actOn = id => !S.actOff.includes(id);
 const MAX = () => [5,10,20].includes(+S.maMax) ? +S.maMax : 10;
 const hard = () => S.spLevel!=="easy";
+/* English games have their own level (word search) */
+const enLv = () => ["easy","normal","hard"].includes(S.enLevel) ? S.enLevel : "normal";
 const vhard = () => S.spLevel==="hard";
 /* groups of things whose outlines look alike (asym: they face one way, so a mirrored shadow is a fair trap) */
 /* groups of things whose outlines look alike but can still be told apart by their shadow
@@ -2754,10 +2762,10 @@ function wsBuild(N, words, dirs){
   return null;
 }
 function wordSearch(k){
-  const H=hard(), VH=vhard();
+  const H=enLv()!=="easy", VH=enLv()==="hard";
   const N = !H ? 6 : 8, count = !H ? 4 : VH ? 8 : 6;
   const dirs = VH ? [[0,1],[1,0],[1,1]] : [[0,1],[1,0]];
-  const pool = uniqWords(N).filter(x=>/^[a-z]+$/.test(x.w) && x.w.length>=3);
+  const pool = uniqWords(N).filter(x=>/^[a-z]+$/.test(x.w) && x.w.length>=3 && !x.e.startsWith("n:"));
   let built=null, pickd=[];
   for(let t=0;t<20 && !built;t++){ pickd=shuffle(pool).slice(0,count); built=wsBuild(N,pickd,dirs); }
   if(!built){ toast("คำศัพท์ที่เลือกไว้ยังไม่พอ ลองเปิดคำเพิ่มในหน้าผู้ปกครอง"); hub(FUNS[k].home||"fun"); return; }
@@ -2769,12 +2777,24 @@ function wordSearch(k){
   for(let r=0;r<N;r++) for(let c=0;c<N;c++){ const d=el(`<div class="wsc wt" data-r="${r}" data-c="${c}">${g[r][c]}</div>`); cells.push(d); grid.append(d); }
   const cellAt=(r,c)=>cells[r*N+c];
   placed.forEach((p,i)=>{
-    const shown = VH ? `<span class="wsw wt">${"_ ".repeat(p.x.w.length).trim()}</span>` : `<span class="wsw wt">${esc(p.x.w)}</span>`;
-    p.item=el(`<button class="wsi"><span class="wsp">${pic(p.x.e)}</span>${shown}</button>`);
-    p.item.onclick=()=>{ hush(); say(p.x.w,0.8); };
+    /* hard level hides the spelling; tap a picture to peek at the word for 3 seconds */
+    p.hidden=VH;
+    p.item=el(`<button class="wsi"><span class="wsp">${pic(p.x.e)}</span><span class="wsw wt"></span></button>`);
+    p.show=on=>{ p.item.querySelector(".wsw").innerHTML = (on||!p.hidden||p.done) ? esc(p.x.w) : `<span class="blanks">${"_".repeat(p.x.w.length)}</span>`; };
+    p.show(false);
+    p.item.onclick=()=>{ hush(); say(p.x.w,0.8);
+      if(p.hidden && !p.done && !peekAll){ hints++; p.show(true); p.item.classList.add("peek"); clearTimeout(p.t); p.t=later(()=>{ p.show(peekAll); p.item.classList.remove("peek"); },3000); } };
     p.color=COLORS[i%COLORS.length]; list.append(p.item);
   });
-  wrap.append(grid,list); app.append(info,wrap);
+  let peekAll=false, hints=0;
+  const side=el(`<div class="wsside"></div>`);
+  if(VH){
+    const pk=el(`<button class="chipbtn wspeek">👀 ดูคำทั้งหมด</button>`);
+    pk.onclick=()=>{ peekAll=!peekAll; if(peekAll) hints+=2; pk.textContent=peekAll?"🙈 ซ่อนคำ":"👀 ดูคำทั้งหมด"; pk.classList.toggle("on",peekAll); placed.forEach(p=>p.show(peekAll)); };
+    side.append(el(`<p class="hint" style="margin:0 0 8px">แตะรูปเพื่อแอบดูคำ 3 วินาที</p>`), pk);
+  }
+  side.prepend(list);
+  wrap.append(grid,side); app.append(info,wrap);
 
   let start=null, dragging=false, found=0, miss=0;
   const line=(a,b)=>{ const dr=Math.sign(b[0]-a[0]), dc=Math.sign(b[1]-a[1]), len=Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]));
@@ -2789,9 +2809,9 @@ function wordSearch(k){
     if(hit){
       hit.done=true; found++; info.querySelector("#wf").textContent=found;
       hit.cells.forEach(([r,c])=>{ const d=cellAt(r,c); d.classList.add("found"); d.style.background=hit.color; });
-      hit.item.classList.add("done"); hit.item.querySelector(".wsw").textContent=hit.x.w;
+      hit.item.classList.add("done"); hit.show(true);
       hush(); say(hit.x.w,0.8,()=>later(()=>sayTH(hit.x.t),200));
-      if(found===placed.length) later(()=>funFinish(k, miss<=3, `หาเจอครบ ${placed.length} คำ`), 2600);
+      if(found===placed.length) later(()=>funFinish(k, miss<=3 && hints<=2, `หาเจอครบ ${placed.length} คำ`+(hints?` (แอบดูคำ ${hints} ครั้ง)`:"")), 2600);
     } else {
       miss++; path.forEach(([r,c])=>{ const d=cellAt(r,c); d.classList.remove("no"); void d.offsetWidth; d.classList.add("no"); });
       hush(); sayTH("ยังไม่ใช่ ลองใหม่นะ");
@@ -2973,6 +2993,11 @@ function pEnglish(){
   const top=el(`<div class="panel"><h3>รูปแบบตัวอักษร</h3><p>ใช้แสดงคำศัพท์ภาษาอังกฤษในทุกเกม</p></div>`);
   top.append(segGroup("case",[[0,"abc ตัวเล็ก"],[1,"ABC ตัวใหญ่"]],S.upper?1:0,v=>{S.upper=v==="1";save();applyCase();}));
   app.append(top);
+  const lv=el(`<div class="panel"><h3>ระดับความยาก</h3>
+    <p>ใช้กับเกม "หาคำในตาราง"<br><b>ง่าย:</b> ตาราง 6×6 หา 4 คำ แนวนอนและแนวตั้ง · <b>ปกติ:</b> ตาราง 8×8 หา 6 คำ<br>
+    <b>ยาก:</b> ตาราง 8×8 หา 8 คำ มีแนวทแยง และเห็นแค่รูป ต้องจำตัวสะกดเอง (แตะรูปเพื่อแอบดูคำได้)</p></div>`);
+  lv.append(segGroup("enlevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],enLv(),v=>{S.enLevel=v;save();}));
+  app.append(lv);
 
   const add=el(`<div class="panel"><h3>➕ เพิ่มคำศัพท์เอง</h3><p>ใส่คำภาษาอังกฤษ ความหมาย และรูปอีโมจิ (กดปุ่มอีโมจิบนแป้นพิมพ์มือถือแล้วเลือกรูป)</p>
     <form class="row" style="align-items:flex-end">
@@ -3094,7 +3119,7 @@ function pVoice(){
 function pSpatial(){
   const p=el(`<div class="panel"><h3>ระดับความยาก</h3>
     <p><b>ง่าย:</b> ตัวเลือกน้อยลง แบบรูปสั้นและซ้ำชัดเจน ภาพไม่เข้าพวกใช้แค่สัตว์ อาหาร ยานพาหนะ ตำแหน่งมีแค่ซ้ายขวา<br>
-    <b>ปกติ:</b> ตัวเลือก 4 ข้อ แบบรูปหลากหลายขึ้น มีภาพหมุน ตำแหน่งบนล่าง และเกมเงาใช้ภาพที่รูปร่างคล้ายกัน<br><b>มองจากทางลูกศร:</b> ง่าย = ด้านหน้า · ปกติ = ด้านหน้า + ด้านบน · ยาก = ด้านหน้า ด้านบน + ด้านหลัง<br><b>ยาก:</b> เกมเงามีโจทย์กลับด้าน เงาที่หันผิดทาง เงาของ 2 สิ่ง และเงา 3 อันที่วิ่งไปมา<br>เกมมองจากทางลูกศร ใช้กองใหญ่ขึ้น (4×3 สูง 4 ชั้น) และมีโจทย์ดูภาพที่เห็นแล้วหากองที่ถูก</p></div>`);
+    <b>ปกติ:</b> ตัวเลือก 4 ข้อ แบบรูปหลากหลายขึ้น มีภาพหมุน ตำแหน่งบนล่าง และเกมเงาใช้ภาพที่รูปร่างคล้ายกัน<br><b>หมายเหตุ:</b> เกมหาคำในตาราง ตั้งระดับแยกได้ที่แท็บ 🔤 อังกฤษ<br><b>มองจากทางลูกศร:</b> ง่าย = ด้านหน้า · ปกติ = ด้านหน้า + ด้านบน · ยาก = ด้านหน้า ด้านบน + ด้านหลัง<br><b>ยาก:</b> เกมเงามีโจทย์กลับด้าน เงาที่หันผิดทาง เงาของ 2 สิ่ง และเงา 3 อันที่วิ่งไปมา<br>เกมมองจากทางลูกศร ใช้กองใหญ่ขึ้น (4×3 สูง 4 ชั้น) และมีโจทย์ดูภาพที่เห็นแล้วหากองที่ถูก</p></div>`);
   p.append(segGroup("splevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],["easy","normal","hard"].includes(S.spLevel)?S.spLevel:"normal",v=>{S.spLevel=v;save();}));
   app.append(p);
 }
