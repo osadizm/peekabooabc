@@ -1309,15 +1309,34 @@ function voiceScore(v, th){
 const enVoices = vs => vs.filter(v=>/^en/i.test(v.lang)).sort((a,b)=>voiceScore(b,false)-voiceScore(a,false));
 const thVoices = vs => vs.filter(v=>/^th/i.test(v.lang)).sort((a,b)=>voiceScore(b,true)-voiceScore(a,true));
 const speed = () => [0.8,1,1.15].includes(+S.speed) ? +S.speed : 1;
+/* online voices (Windows "… Online (Natural)") sound best but drop words or go silent on a slow or blocked
+   connection. If one fails or never starts, this device switches to voices installed on the computer. */
+let AVOID_ONLINE=false; try{ AVOID_ONLINE = localStorage.getItem("kv-offline-voice")==="1"; }catch(e){}
+const isOnline = v => !!v && (v.localService===false || /online/i.test(v.name));
 function pickVoice(){
   try{
     const vs = speechSynthesis.getVoices();
+    const ok = v => !(AVOID_ONLINE && isOnline(v));
     const en = enVoices(vs), th = thVoices(vs);
-    voiceEN = en.find(v=>v.name===S.voiceEN) || en[0] || null;
-    voiceTH = th.find(v=>v.name===S.voiceTH) || th[0] || null;
+    voiceEN = en.find(v=>v.name===S.voiceEN && ok(v)) || en.find(ok) || en[0] || null;
+    voiceTH = th.find(v=>v.name===S.voiceTH && ok(v)) || th.find(ok) || th[0] || null;
   }catch(e){}
 }
+function dropOnline(){
+  if(AVOID_ONLINE) return; AVOID_ONLINE=true;
+  try{ localStorage.setItem("kv-offline-voice","1"); }catch(e){}
+  pickVoice();
+}
 try{ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }catch(e){}
+/* desktop Chrome/Edge stop a long sentence after about 15 seconds; nudging the engine keeps it talking */
+const DESKTOP = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||"");
+setInterval(()=>{ try{ if(DESKTOP && speechSynthesis.speaking && !speechSynthesis.paused){ speechSynthesis.pause(); speechSynthesis.resume(); } }catch(e){} }, 10000);
+/* tell once if this device has no Thai voice, since then every Thai sentence is silent */
+let warnedTH=false;
+function checkThaiVoice(){
+  if(warnedTH||S.mute) return; let vs=[]; try{ vs=speechSynthesis.getVoices(); }catch(e){}
+  if(vs.length && !thVoices(vs).length){ warnedTH=true; toast("เครื่องนี้ยังไม่มีเสียงภาษาไทย<br>ดูวิธีติดตั้งที่ สำหรับผู้ปกครอง → 🔊 เสียง"); }
+}
 /* Chrome/Edge (Windows) stutter when speak() follows cancel() straight away, and can drop an
    utterance's end event if nothing keeps a reference to it; LIVE holds them and say() waits a moment. */
 const LIVE = new Set(); let lastCancel = 0;
@@ -1325,21 +1344,33 @@ function say(text, rate=0.8, onend, lang="en-US"){
   const tok = TOKEN;
   let fired = false;
   const cb = ()=>{ if(fired) return; fired = true; if(onend && tok===TOKEN) onend(); };
-  const go = ()=>{
+  const th = /^th/.test(lang);
+  if(th) checkThaiVoice();
+  const go = (retry)=>{
     if(tok!==TOKEN) return;
     try{
       const u = new SpeechSynthesisUtterance(text);
-      const th = /^th/.test(lang);
       u.lang = lang; u.rate = Math.min(1.4, rate*speed()); u.pitch = 1;
       const v = th ? voiceTH : voiceEN; if(v) u.voice = v;
+      let started=false;
+      u.onstart = ()=>{ started=true; };
       LIVE.add(u);
-      u.onend = u.onerror = ()=>{ LIVE.delete(u); cb(); };
+      u.onend = ()=>{ LIVE.delete(u); cb(); };
+      u.onerror = ev=>{
+        LIVE.delete(u);
+        const why = ev && ev.error;
+        /* an online voice failed for a reason other than us stopping it: switch to an installed voice and say it again */
+        if(!retry && isOnline(v) && why!=="interrupted" && why!=="canceled"){ dropOnline(); go(true); return; }
+        cb();
+      };
       speechSynthesis.speak(u);
+      /* an online voice that has not started after 3 seconds is stuck: same fallback */
+      if(!retry && isOnline(v)) setTimeout(()=>{ if(!started && tok===TOKEN && LIVE.has(u)){ LIVE.delete(u); try{ speechSynthesis.cancel(); }catch(e){} dropOnline(); go(true); } }, 3000);
     }catch(e){ cb(); }
   };
   if(S.mute){ setTimeout(cb, 350); return; }
   const wait = Math.max(0, 200 - (Date.now() - lastCancel));
-  wait ? setTimeout(go, wait) : go();
+  wait ? setTimeout(()=>go(false), wait) : go(false);
 }
 const sayTH = (t, onend) => say(t, 0.95, onend, "th-TH");
 function hush(){ TOKEN++; try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
@@ -3181,6 +3212,12 @@ function pVoice(){
     p.append(el(`<p class="note" style="margin-top:8px">เสียงที่มี ⭐ คือเสียงคุณภาพสูง ระบบเลือกเสียงที่ดีที่สุดในเครื่องให้อัตโนมัติ</p>`));
     return p;
   };
+  const st=el(`<div class="panel"><h3>สถานะเสียงในเครื่องนี้</h3>
+    <p>เสียงภาษาอังกฤษ: <b>${enVoices(vs).length} เสียง</b> · เสียงภาษาไทย: <b>${thVoices(vs).length ? thVoices(vs).length+" เสียง" : "ไม่มี (ประโยคภาษาไทยจะไม่มีเสียง)"}</b></p>
+    <p>ถ้าเสียงขาดเป็นช่วง ๆ ให้ใช้เฉพาะเสียงที่ติดตั้งในเครื่อง (เสียงแบบ Online ต้องใช้อินเทอร์เน็ตและอาจสะดุด)</p></div>`);
+  st.append(segGroup("offv",[["auto","เลือกให้อัตโนมัติ"],["local","ใช้เสียงในเครื่องเท่านั้น"]],AVOID_ONLINE?"local":"auto",v=>{
+    AVOID_ONLINE = v==="local"; try{ localStorage.setItem("kv-offline-voice",AVOID_ONLINE?"1":"0"); }catch(e){} pickVoice(); parent("voice"); }));
+  app.append(st);
   app.append(block("เสียงภาษาอังกฤษ", enVoices(vs), voiceEN, "voiceEN", "Apple. A, P, P, L, E. Apple!", t=>say(t,0.8)));
   app.append(block("เสียงภาษาไทย", thVoices(vs), voiceTH, "voiceTH", "กอ ไก่ ขอ ไข่ หนึ่ง บวก สอง เท่ากับ สาม", t=>sayTH(t)));
   const sp=el(`<div class="panel"><h3>ความเร็วในการอ่าน</h3><p>ใช้กับทุกเสียงในเกม</p></div>`);
@@ -3190,6 +3227,8 @@ function pVoice(){
     <p><b>iPhone / iPad:</b> การตั้งค่า (Settings) › การช่วยการเข้าถึง (Accessibility) › เนื้อหาที่พูด (Spoken Content) › เสียง (Voices)<br>
     เลือก <b>ภาษาอังกฤษ</b> แล้วดาวน์โหลดเสียงที่มีคำว่า <b>คุณภาพสูง / Enhanced</b> หรือ <b>Premium</b> เช่น Ava หรือ Samantha<br>
     เลือก <b>ภาษาไทย</b> แล้วดาวน์โหลดเสียง Narisa หรือ Kanya แบบคุณภาพสูง</p>
+    <p><b>Windows 10 / 11:</b> Settings › Time &amp; language › Speech › Manage voices › Add voices › เลือก <b>Thai</b> แล้วติดตั้ง จากนั้นปิดเบราว์เซอร์แล้วเปิดใหม่<br>
+    หรือเปิดเว็บด้วย <b>Microsoft Edge</b> ซึ่งมีเสียงไทยและอังกฤษแบบธรรมชาติให้ในตัว</p>
     <p><b>Android:</b> การตั้งค่า › ระบบ › ภาษา › เอาต์พุตการอ่านออกเสียง (Text-to-speech) เลือก Google แล้วติดตั้งข้อมูลเสียงภาษาอังกฤษและภาษาไทย</p>
     <p>ติดตั้งเสร็จแล้ว ปิดแอปแล้วเปิดใหม่ จากนั้นกลับมาเลือกเสียงในหน้านี้</p></div>`));
 }
