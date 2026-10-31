@@ -310,6 +310,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .wspeek.on{background:#fff3c4}
 .wsi.done{background:#effaf2;box-shadow:0 3px 0 var(--ok)}
 .wsi.done .wsw{color:#2f8a4b;text-decoration:line-through;text-decoration-thickness:3px}
+/* Thai final consonants */
+.fin{color:#ef4444;text-decoration:underline;text-decoration-thickness:.08em;text-underline-offset:.12em}
+.matw{font-family:var(--thai)}
+.bigword.matw,.card .tw.matw{color:var(--ink)}
+.card .tw.matw{font-size:26px}
+.matsec .mathead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.matsec .mname{font-size:22px;background:var(--pink);color:#fff;box-shadow:0 3px 0 var(--pink-deep)}
+.matsec .mlet{font-size:16px;opacity:.8}
+.reveal .big .bigword{font-size:.55em}
 /* stories */
 .stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .scard{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px 12px;border-radius:20px;background:#fff;border:3px solid #fff;box-shadow:0 5px 0 rgba(107,74,58,.12);transition:transform .15s}
@@ -1261,7 +1270,7 @@ const SIMILAR = [
 /* math level: easy = pictures, hard = numbers only + missing parts, mixed = either, chosen per question */
 const mHard = () => S.maLevel==="hard" || (S.maLevel==="mixed" && Math.random()<.5);
 const THAI_WORD = /^[\u0E00-\u0E7F]{2,8}$/;
-const LEARN = [{id:"en_learn",sub:"en",th:"ท่องศัพท์"},{id:"th_learn",sub:"th",th:"ท่อง ก–ฮ"}];
+const LEARN = [{id:"en_learn",sub:"en",th:"ท่องศัพท์"},{id:"th_learn",sub:"th",th:"ท่อง ก–ฮ"},{id:"th_mat_learn",sub:"th",th:"ท่องมาตราตัวสะกด"}];
 let OFF = new Set(S.off);
 function save(){ S.off=[...OFF]; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 function applyCase(){ document.body.classList.toggle("upper", !!S.upper); }
@@ -1481,6 +1490,7 @@ function hub(sub){
     if(wk) add("🔁","ทบทวนคำที่ยังผิด",`มี ${wk} คำที่ควรฝึกอีก`,()=>start("en_review"),"review");
   }
   if(sub==="th" && actOn("th_learn")) add("📖","ท่อง ก–ฮ","แตะตัวอักษรเพื่อฟังเสียง",thaiLearn,"learn");
+  if(sub==="th" && actOn("th_mat_learn")) add("📚","ท่องมาตราตัวสะกด","แม่ ก กา กก กง กด กน กบ กม เกย เกอว",matLearn,"learn");
   Object.entries(FUNS).filter(([k,f])=>(f.home||"fun")===sub && actOn("fun_"+k)).forEach(([k,f])=>{
     const ok=!f.avail||f.avail(); add(f.icon,f.th, ok?f.ds:"ให้ผู้ปกครองเลือกคำหรือตัวอักษรเพิ่มก่อน", ()=>playFun(k), "", !ok); });
   Object.entries(ACTS).filter(([k,a])=>a.sub===sub && !a.hidden && actOn(k)).forEach(([k,a])=>{
@@ -1708,6 +1718,49 @@ function blockSVG(cells,N,color,center){
   }
   return `<svg class="blk" viewBox="-3 -3 ${N*U+6} ${N*U+6}" aria-hidden="true">${rects}<path d="${lines}" stroke="#6b4a3a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>`;
 }
+/* ---------- Thai final-consonant groups (มาตราตัวสะกด) ----------
+   words: [word, picture, final letter (when it is not the group's own letter), "h" = ไม่ตรงมาตรา (hard level only)] */
+const MATRA = [
+ {id:"kka", name:"แม่ ก กา", say:"แม่ กอ กา", fin:"", letters:"ไม่มีตัวสะกด", words:[["ปลา","🐟"],["ตา","👁️"],["หู","👂"],["งู","🐍"],["ปู","🦀"],["เสือ","🐯"],["ม้า","🐴"],["ยา","💊"],["ขา","🦵"],["เรือ","⛵"]]},
+ {id:"kok", name:"แม่ กก", say:"แม่ กอก", fin:"ก", letters:"ก ข ค ฆ", words:[["นก","🐦"],["ปาก","👄"],["เด็ก","👦"],["ผัก","🥬"],["หมึก","🦑"],["จมูก","👃"],["เมฆ","☁️","ฆ","h"],["สุข","😊","ข","h"]]},
+ {id:"kong",name:"แม่ กง", say:"แม่ กง", fin:"ง", letters:"ง", words:[["ลิง","🐒"],["กุ้ง","🦐"],["ช้าง","🐘"],["ผึ้ง","🐝"],["ถุง","🛍️"],["ธง","🚩"],["ระฆัง","🔔"]]},
+ {id:"kod", name:"แม่ กด", say:"แม่ กด", fin:"ด", letters:"ด จ ช ซ ฎ ฏ ฐ ฑ ฒ ต ถ ท ธ ศ ษ ส", words:[["มด","🐜"],["เป็ด","🦆"],["ขวด","🍾"],["เห็ด","🍄"],["เบ็ด","🎣"],["รถ","🚗","ถ","h"],["เพชร","💎","ช","h"],["กระดาษ","📄","ษ","h"]]},
+ {id:"kon", name:"แม่ กน", say:"แม่ กน", fin:"น", letters:"น ญ ณ ร ล ฬ", words:[["ช้อน","🥄"],["จาน","🍽️"],["ฟัน","🦷"],["บ้าน","🏠"],["เทียน","🕯️"],["เงิน","💰"],["หนอน","🐛"],["อาหาร","🍲","ร","h"],["ปลาวาฬ","🐳","ฬ","h"],["ทหาร","💂","ร","h"]]},
+ {id:"kob", name:"แม่ กบ", say:"แม่ กบ", fin:"บ", letters:"บ ป พ ฟ ภ", words:[["กบ","🐸"],["ตะเกียบ","🥢"],["ดาบ","🗡️"],["หีบ","📦"],["ยีราฟ","🦒","ฟ","h"],["ภาพ","🖼️","พ","h"],["กราฟ","📈","ฟ","h"]]},
+ {id:"kom", name:"แม่ กม", say:"แม่ กม", fin:"ม", letters:"ม", words:[["ร่ม","☂️"],["ส้ม","🍊"],["ผม","💇"],["นม","🥛"],["ลม","🌬️"],["ขนม","🍰"]]},
+ {id:"koey",name:"แม่ เกย", say:"แม่ เกย", fin:"ย", letters:"ย", words:[["ควาย","🐃"],["หอย","🐚"],["กล้วย","🍌"],["ถ้วย","☕"],["ยาย","👵"],["ทราย","⏳"]]},
+ {id:"koew",name:"แม่ เกอว", say:"แม่ เกอว", fin:"ว", letters:"ว", words:[["แมว","🐱"],["ดาว","⭐"],["ข้าว","🍚"],["นิ้ว","☝️"],["ขาว","#ffffff"]]}
+];
+const MAT = Object.fromEntries(MATRA.map(m=>[m.id,m]));
+const matHard = () => S.matLevel==="hard";
+/* every word as {w,e,m,fin,h}; the easy level keeps only words spelled with the group's own letter (ตรงมาตรา) */
+function matWords(all){ return MATRA.flatMap(m=>m.words.map(([w,e,f,h])=>({w,e,m,fin:f||m.fin,h:!!h}))).filter(x=>all||matHard()||!x.h); }
+/* the word with its final consonant in red */
+function matShow(x, mark=true){
+  if(!x.fin || !mark) return esc(x.w);
+  const i=x.w.lastIndexOf(x.fin); if(i<0) return esc(x.w);
+  return esc(x.w.slice(0,i))+`<span class="fin">${esc(x.fin)}</span>`+esc(x.w.slice(i+1));
+}
+const letterSound = c => (TH_SOUND[c] || c+"อ");
+const matExplain = x => x.fin ? `${x.w} สะกดด้วย ${x.fin} อยู่${x.m.name}` : `${x.w} ไม่มีตัวสะกด อยู่${x.m.name}`;
+const matSay = x => x.fin ? `${x.w}, สะกดด้วย ${letterSound(x.fin)}, อยู่ ${x.m.say}` : `${x.w}, ไม่มีตัวสะกด, อยู่ ${x.m.say}`;
+
+function matLearn(){
+  screen({back:()=>hub("th"),backLabel:"ภาษาไทย"});
+  app.append(el(`<div class="hubhead"><h2 class="outline">📚 มาตราตัวสะกด</h2><p>แตะคำเพื่อฟังว่าสะกดด้วยอะไร อยู่แม่อะไร · ตัวสีแดงคือตัวสะกด</p></div>`));
+  for(const m of MATRA){
+    const words=matWords(true).filter(x=>x.m===m);
+    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname">🔊 ${m.name}</button><span class="mlet">${m.fin?"ตัวสะกด: ":""}${m.letters}</span></div><div class="grid"></div></div>`);
+    sec.querySelector(".mname").onclick=()=>{ hush(); sayTH(m.fin ? `${m.say}, สะกดด้วย ${m.letters.split(" ").slice(0,6).map(letterSound).join(" ")}` : `${m.say}, ไม่มีตัวสะกด`); };
+    const g=sec.querySelector(".grid");
+    words.forEach(x=>{
+      const c=el(`<button class="card"><div class="e">${pic(x.e)}</div><div class="tw matw">${matShow(x)}</div>${x.h?`<div class="t">ไม่ตรงมาตรา</div>`:""}</button>`);
+      c.onclick=()=>{ c.classList.remove("talk"); void c.offsetWidth; c.classList.add("talk"); hush(); sayTH(matSay(x)); };
+      g.append(c);
+    });
+    app.append(sec);
+  }
+}
 /* =================== QUESTION GENERATORS =================== */
 function distractWords(x, n, same=true){
   let pool = shuffle(allWords(x.cat).filter(o=>o.w!==x.w && o.e!==x.e && o.t!==x.t));
@@ -1773,6 +1826,26 @@ const ACTS = {
       mount:st=>st.querySelector(".bigear").onclick=()=>{hush();sayTH(thName(x));},
       auto:()=>sayTH(thName(x)),listen:()=>sayTH(thName(x)),layout:"words",opts:thLetterOpts(x),
       reveal:{big:`<span class="thbig">${x.c}</span>${x.e?esc(x.e):""}`,text:`${x.c} ${x.w}`,sayTH:thName(x)}})},
+  th_mat:{sub:"th",icon:"🔚",th:"คำนี้อยู่แม่อะไร",ds:"ดูตัวสะกด แล้วเลือกมาตรา",
+    items:n=>fillRound(matWords(),n),
+    gen:x=>{
+      const others=shuffle(MATRA.filter(m=>m!==x.m)).slice(0,3), mark=!matHard();
+      return {key:"mt"+x.w,lang:"th",q:"คำนี้ อยู่แม่อะไร ?",sayQ:`${x.w} อยู่แม่อะไร`,
+        stage:`<div class="picture sm pop">${pic(x.e)}</div><div class="bigword matw">${matShow(x,mark)}</div>${mark?`<div class="hint">ตัวสีแดงคือตัวสะกด</div>`:`<div class="hint">หาตัวสะกดเองนะ</div>`}`,
+        layout:"words",listen:()=>sayTH(x.w),
+        opts:shuffle([x.m,...others]).map(m=>({ok:m===x.m,html:`<span class="outline tx">${m.name}</span>`,sayTH:m.say})),
+        reveal:{big:`${pic(x.e)}<span class="bigword matw">${matShow(x)}</span>`,text:matExplain(x)+(x.h?"<br>(ไม่ตรงมาตรา)":""),sayTH:matSay(x)}};
+    }},
+  th_mat_pick:{sub:"th",icon:"🔍",th:"หาคำในมาตรา",ds:"คำไหนอยู่แม่ กง แม่ กน …",
+    gen:()=>{
+      const pool=matWords(), m=pick1(MATRA), right=pick1(pool.filter(x=>x.m===m));
+      const ds=shuffle(pool.filter(x=>x.m!==m)).filter((x,i,a)=>a.findIndex(z=>z.m===x.m)===i).slice(0,3);
+      return {key:"mp"+right.w,lang:"th",q:`คำไหน อยู่${m.name} ?`,sayQ:`คำไหน อยู่ ${m.say}`,optCls:"storyopts",
+        stage:`<div class="bigword">${m.name}</div><div class="hint">${m.fin?"ตัวสะกด: "+m.letters:"ไม่มีตัวสะกด"}</div>`,
+        layout:"words",
+        opts:shuffle([right,...ds]).map(x=>({ok:x===right,html:`<span class="oe">${pic(x.e)}</span><span class="outline tx">${esc(x.w)}</span>`,sayTH:x.w})),
+        reveal:{big:`${pic(right.e)}<span class="bigword matw">${matShow(right)}</span>`,text:matExplain(right),sayTH:matSay(right)}};
+    }},
   th_word:{sub:"th",icon:"📖",th:"อ่านคำภาษาไทย",ds:"ดูรูป แล้วเลือกคำไทยที่ถูก",words:true,
     pool:()=>EVERY().filter(x=>isOn(x) && THAI_WORD.test(x.t)),
     gen:x=>{
@@ -3052,6 +3125,11 @@ function pEnglish(){
 }
 
 function pThai(){
+  const ml=el(`<div class="panel"><h3>มาตราตัวสะกด</h3><p>ใช้กับเกม "คำนี้อยู่แม่อะไร" และ "หาคำในมาตรา"<br>
+    <b>ตรงมาตรา:</b> เฉพาะคำที่สะกดด้วยตัวหลักของมาตรา เช่น นก (ก) มด (ด) และมีตัวสะกดสีแดงช่วย<br>
+    <b>รวมไม่ตรงมาตรา:</b> เพิ่มคำอย่าง รถ (ถ → แม่ กด) อาหาร (ร → แม่ กน) ยีราฟ (ฟ → แม่ กบ) และไม่มีตัวสีแดงช่วย</p></div>`);
+  ml.append(segGroup("matlevel",[["easy","ตรงมาตรา"],["hard","รวมไม่ตรงมาตรา"]],matHard()?"hard":"easy",v=>{S.matLevel=v;save();}));
+  app.append(ml);
   const p=el(`<div class="panel"><h3>พยัญชนะที่ให้ลูกฝึก</h3>
     <p>ใช้กับเกม "ดูรูป หาพยัญชนะ" "ฟังเสียง หาพยัญชนะ" และ "ลากเส้นตามตัวอักษร" หน้าท่อง ก–ฮ และเกมเรียงพยัญชนะยังใช้ครบ 44 ตัวเสมอ<br>แนะนำให้เริ่มทีละกลุ่ม: แตะ "ไม่เลือกเลย" แล้วค่อยเพิ่มกลุ่มแรก</p>
     <div class="row" style="margin-bottom:10px"><button class="mini" data-a="all">เลือกทั้งหมด</button><button class="mini" data-a="none">ไม่เลือกเลย</button><span class="grpbtns row"></span></div>
