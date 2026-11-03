@@ -409,7 +409,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .ticket .oe{font-size:.7em;margin-right:.2em;line-height:1}
 .blend{display:flex;align-items:center;gap:10px;font-family:var(--thai);font-size:clamp(34px,6vw,56px);color:var(--ink)}
 .blend b{font-weight:400;background:#fff;border-radius:14px;padding:0 .3em;box-shadow:0 4px 0 var(--paper-line)}
-.blend .vw{font-size:.55em;padding:.25em .5em}
+.blend .vw{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1;padding:.1em .4em}
+.blend .vw small{font-size:.38em;opacity:.75}
 .blend .qm{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border:3px dashed var(--pink);border-radius:14px;background:#fff;color:var(--pink);font-family:var(--display);font-weight:700;font-size:.8em}
 .iso{width:min(100%,380px);height:auto;max-height:300px}
 .ticket .flat{width:auto;height:1.3em;max-width:100%}
@@ -1953,14 +1954,16 @@ const ACTS = {
         reveal:{big:`<span class="thbig">${ans}</span>`,text:`${c} + ${v.n} อ่านว่า ${ans}`,sayTH:ans}};
     }},
   th_blend:{sub:"th",icon:"🧩",th:"ประสมคำ",ds:"พยัญชนะ + สระ = คำ เช่น ต + า = ตา",
-    gen:()=>{
-      const x=pick1(BLEND), v=VOWELS.find(o=>o.v===x.v);
+    /* every consonant × vowel pair (70 in all), shuffled, so a round does not repeat */
+    items:n=>{ const all=VOW_CONS.flatMap(c=>VOWELS.map(v=>({c,v}))); let a=[]; while(a.length<n) a=a.concat(shuffle(all)); return a.slice(0,n); },
+    gen:x=>{
+      const v=x.v, w=syl(x.c,v), mark = v.pre ? v.v+"–" : "–"+v.v;
       const cands=[...new Set(shuffle(VOWELS.filter(o=>o!==v)).slice(0,2).map(o=>syl(x.c,o))
-        .concat(shuffle(VOW_CONS.filter(c=>c!==x.c)).slice(0,2).map(c=>syl(c,v))))].filter(w=>w!==x.w).slice(0,3);
-      return {key:"b"+x.w,lang:"th",q:"ประสมแล้ว อ่านว่าอะไร ?",sayQ:`${x.c}อ ${v.n} ประสมแล้ว อ่านว่าอะไร`,
-        stage:`<div class="picture sm pop">${x.e}</div><div class="blend"><b>${x.c}</b><span>+</span><b class="vw">${v.n}</b><span>=</span><span class="qm">?</span></div>`,
-        layout:"words",opts:shuffle([x.w,...cands]).map(w=>({ok:w===x.w,html:`<span class="outline tx" style="font-size:1.1em">${w}</span>`,sayTH:w})),
-        reveal:{big:`${x.e}<span class="thbig">${x.w}</span>`,text:`${x.c} + ${v.n} = ${x.w}`,sayTH:`${x.c}อ ${v.n} ${x.w}`}};
+        .concat(shuffle(VOW_CONS.filter(c=>c!==x.c)).slice(0,2).map(c=>syl(c,v))))].filter(z=>z!==w).slice(0,3);
+      return {key:"b"+w,lang:"th",q:"ประสมแล้ว อ่านว่าอะไร ?",sayQ:`${letterSound(x.c)} ${v.n} ประสมแล้ว อ่านว่าอะไร`,
+        stage:`<div class="blend"><b>${x.c}</b><span>+</span><b class="vw">${mark}<small>${v.n}</small></b><span>=</span><span class="qm">?</span></div>`,
+        layout:"words",opts:shuffle([w,...cands]).map(z=>({ok:z===w,html:`<span class="outline tx" style="font-size:1.1em">${z}</span>`,sayTH:z})),
+        reveal:{big:`<span class="thbig">${w}</span>`,text:`${x.c} + ${v.n} = ${w}`,sayTH:`${letterSound(x.c)} ${v.n} ${w}`}};
     }},
   th_rhyme:{sub:"th",icon:"🎵",th:"คำคล้องจอง",ds:"คำไหนเสียงท้ายเหมือนกัน ไก่–ไข่",
     gen:()=>{
