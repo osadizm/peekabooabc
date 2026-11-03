@@ -1598,9 +1598,14 @@ const OPP_PAIRS = [
 /* words that mean nearly the same (NOT the opposite): the trickiest wrong answer */
 const OPP_NEAR = {"ใหญ่":"โต","เล็ก":"จิ๋ว","เร็ว":"ไว","ดีใจ":"สุขใจ","เสียใจ":"เศร้า","อ้วน":"ท้วม","ร้อน":"อุ่น","สกปรก":"เลอะ","หัวเราะ":"ยิ้ม","ร้องไห้":"สะอื้น","ยาว":"ยืด","ดัง":"เสียงดัง","มาก":"เยอะ","ถาม":"สงสัย","ใหม่":"สด"};
 const OPP_LIST = (()=>{ const out=[]; OPP_PAIRS.forEach(([x,y,t],i)=>{ const a={w:x,pair:i,theme:t}, b={w:y,pair:i,theme:t}; a.opp=b; b.opp=a; out.push(a,b); }); return out; })();
-const VOWELS=[{v:"า",n:"สระอา"},{v:"ี",n:"สระอี"},{v:"ู",n:"สระอู"},{v:"ือ",n:"สระอือ"},{v:"เ",n:"สระเอ",pre:true},{v:"แ",n:"สระแอ",pre:true},{v:"โ",n:"สระโอ",pre:true}];
-const VOW_CONS=["ก","ม","ต","ป","น","ด","บ","ย","ล","ว"];
-const syl=(c,v)=> v.pre ? v.v+c : c+v.v;
+/* vowels as templates: C is where the consonant goes */
+const VOWELS=[{t:"Cา",n:"สระอา"},{t:"Cะ",n:"สระอะ"},{t:"Cิ",n:"สระอิ"},{t:"Cี",n:"สระอี"},{t:"Cึ",n:"สระอึ"},{t:"Cือ",n:"สระอือ"},
+  {t:"Cุ",n:"สระอุ"},{t:"Cู",n:"สระอู"},{t:"เC",n:"สระเอ"},{t:"แC",n:"สระแอ"},{t:"โC",n:"สระโอ"},{t:"ไC",n:"สระไอ"},{t:"Cำ",n:"สระอำ"},
+  {t:"เCา",n:"สระเอา"},{t:"เCีย",n:"สระเอีย"},{t:"เCือ",n:"สระเอือ"},{t:"Cัว",n:"สระอัว"}];
+/* consonants children meet first */
+const VOW_CONS=["ก","ข","ค","ง","จ","ช","ซ","ด","ต","ถ","ท","น","บ","ป","ผ","ฝ","พ","ฟ","ม","ย","ร","ล","ว","ส","ห"];
+const syl=(c,v)=> v.t.replace("C",c);
+const vmark=v=> v.t.replace("C","–");
 const BLEND=[["ตา","ต","า","👁️"],["ปู","ป","ู","🦀"],["งู","ง","ู","🐍"],["ขา","ข","า","🦵"],["หู","ห","ู","👂"],["ยา","ย","า","💊"],
   ["นา","น","า","🌾"],["ดู","ด","ู","👀"],["มือ","ม","ือ","✋"],["สี","ส","ี","🎨"],["ผี","ผ","ี","👻"]].map(([w,c,v,e])=>({w,c,v,e}));
 const RHYME=[["ตา","ปลา","หมา","ขา","นา"],["หู","งู","ปู","หมู","ดู"],["ไก่","ไข่","ไฟ","ใจ"],["ผี","สี","ปี","ดี"],
@@ -1953,11 +1958,11 @@ const ACTS = {
         opts:shuffle([ans,...ds]).map(w=>({ok:w===ans,html:`<span class="outline tx" style="font-size:1.1em">${w}</span>`,sayTH:w})),
         reveal:{big:`<span class="thbig">${ans}</span>`,text:`${c} + ${v.n} อ่านว่า ${ans}`,sayTH:ans}};
     }},
-  th_blend:{sub:"th",icon:"🧩",th:"ประสมคำ",ds:"พยัญชนะ + สระ = คำ เช่น ต + า = ตา",
-    /* every consonant × vowel pair (70 in all), shuffled, so a round does not repeat */
+  th_blend:{sub:"th",icon:"🧩",th:"ประสมคำ",ds:"พยัญชนะ 25 ตัว + สระ 17 ตัว เช่น ต + า = ตา",
+    /* every consonant × vowel pair (425 in all), shuffled, so a round does not repeat */
     items:n=>{ const all=VOW_CONS.flatMap(c=>VOWELS.map(v=>({c,v}))); let a=[]; while(a.length<n) a=a.concat(shuffle(all)); return a.slice(0,n); },
     gen:x=>{
-      const v=x.v, w=syl(x.c,v), mark = v.pre ? v.v+"–" : "–"+v.v;
+      const v=x.v, w=syl(x.c,v), mark = vmark(v);
       const cands=[...new Set(shuffle(VOWELS.filter(o=>o!==v)).slice(0,2).map(o=>syl(x.c,o))
         .concat(shuffle(VOW_CONS.filter(c=>c!==x.c)).slice(0,2).map(c=>syl(c,v))))].filter(z=>z!==w).slice(0,3);
       return {key:"b"+w,lang:"th",q:"ประสมแล้ว อ่านว่าอะไร ?",sayQ:`${letterSound(x.c)} ${v.n} ประสมแล้ว อ่านว่าอะไร`,
