@@ -1582,10 +1582,21 @@ function thaiLearn(){
 /* ---------- Thai extra data ---------- */
 const THNUM="๐๑๒๓๔๕๖๗๘๙", NUMW=["ศูนย์","หนึ่ง","สอง","สาม","สี่","ห้า","หก","เจ็ด","แปด","เก้า","สิบ"];
 const toTh = n => String(n).replace(/\d/g,d=>THNUM[d]);
-const OPP_LIST = (()=>{ const pairs=[["ใหญ่","🐘","เล็ก","🐭"],["ร้อน","🔥","เย็น","❄️"],["สูง","🦒","เตี้ย","🐧"],["กลางวัน","☀️","กลางคืน","🌙"],
-  ["ดีใจ","😀","เสียใจ","😢"],["เร็ว","🚀","ช้า","🐌"],["หนัก","🏋️","เบา","🎈"],["ยาว","🐍","สั้น","🐛"],["ตื่น","😃","หลับ","😴"],
-  ["มืด","🌑","สว่าง","💡"],["มาก","🍎🍎🍎","น้อย","🍎"],["เปิด","📖","ปิด","📕"]];
-  const out=[]; pairs.forEach((p,i)=>{ const a={w:p[0],e:p[1],pair:i}, b={w:p[2],e:p[3],pair:i}; a.opp=b; b.opp=a; out.push(a,b); }); return out; })();
+/* opposite pairs grouped by theme; wrong pairs are built only from different themes, so they can never be real opposites */
+const OPP_PAIRS = [
+  ["ใหญ่","เล็ก","size"],["ยาว","สั้น","size"],["อ้วน","ผอม","size"],["หนา","บาง","size"],["กว้าง","แคบ","size"],["สูง","เตี้ย","size"],
+  ["ร้อน","เย็น","feel"],["หนัก","เบา","feel"],["แข็ง","นิ่ม","feel"],["เปียก","แห้ง","feel"],["สะอาด","สกปรก","feel"],
+  ["บน","ล่าง","place"],["ซ้าย","ขวา","place"],["หน้า","หลัง","place"],["ใน","นอก","place"],["ใกล้","ไกล","place"],["ลึก","ตื้น","place"],
+  ["กลางวัน","กลางคืน","time"],["เช้า","ค่ำ","time"],["ใหม่","เก่า","time"],["ตื่น","หลับ","time"],
+  ["ดีใจ","เสียใจ","mood"],["หัวเราะ","ร้องไห้","mood"],["ขยัน","ขี้เกียจ","mood"],["ชนะ","แพ้","mood"],
+  ["เร็ว","ช้า","move"],["ขึ้น","ลง","move"],["เข้า","ออก","move"],["มา","ไป","move"],["ดึง","ผลัก","move"],["ยืน","นั่ง","move"],
+  ["เปิด","ปิด","do"],["ซื้อ","ขาย","do"],["ให้","รับ","do"],["ถาม","ตอบ","do"],
+  ["มาก","น้อย","amount"],["เต็ม","ว่าง","amount"],["รวย","จน","amount"],
+  ["มืด","สว่าง","look"],["ขาว","ดำ","look"],["ดัง","ค่อย","look"],["ถูก","ผิด","look"]
+];
+/* words that mean nearly the same (NOT the opposite): the trickiest wrong answer */
+const OPP_NEAR = {"ใหญ่":"โต","เล็ก":"จิ๋ว","เร็ว":"ไว","ดีใจ":"สุขใจ","เสียใจ":"เศร้า","อ้วน":"ท้วม","ร้อน":"อุ่น","สกปรก":"เลอะ","หัวเราะ":"ยิ้ม","ร้องไห้":"สะอื้น","ยาว":"ยืด","ดัง":"เสียงดัง","มาก":"เยอะ","ถาม":"สงสัย","ใหม่":"สด"};
+const OPP_LIST = (()=>{ const out=[]; OPP_PAIRS.forEach(([x,y,t],i)=>{ const a={w:x,pair:i,theme:t}, b={w:y,pair:i,theme:t}; a.opp=b; b.opp=a; out.push(a,b); }); return out; })();
 const VOWELS=[{v:"า",n:"สระอา"},{v:"ี",n:"สระอี"},{v:"ู",n:"สระอู"},{v:"ือ",n:"สระอือ"},{v:"เ",n:"สระเอ",pre:true},{v:"แ",n:"สระแอ",pre:true},{v:"โ",n:"สระโอ",pre:true}];
 const VOW_CONS=["ก","ม","ต","ป","น","ด","บ","ย","ล","ว"];
 const syl=(c,v)=> v.pre ? v.v+c : c+v.v;
@@ -1907,14 +1918,28 @@ const ACTS = {
       if(v===1) return {key:"u1"+n,lang:"th",q:"นับแล้ว เขียนเป็นเลขไทยว่าอะไร ?",stage:`<div class="counting">${repeatE(pick1(COUNT_EMOJI),n)}</div>`,layout:"words",opts:thOpts,reveal};
       return {key:"u2"+n,lang:"th",q:`เลข ${n} เขียนเป็นเลขไทยว่าอะไร ?`,sayQ:`เลข ${NUMW[n]} เขียนเป็นเลขไทยว่าอะไร`,stage:`<div class="bigletter pop">${n}</div>`,layout:"words",opts:thOpts,reveal};
     }},
-  th_opp:{sub:"th",icon:"🔃",th:"คำตรงข้าม",ds:"ใหญ่–เล็ก ร้อน–เย็น",
-    gen:()=>{
-      const x=pick1(OPP_LIST), others=shuffle(OPP_LIST.filter(o=>o.pair!==x.pair)).slice(0,3);
-      const opt=o=>`<span class="oe">${o.e}</span><span class="outline tx">${o.w}</span>`;
-      return {key:"x"+x.w,lang:"th",q:`คำตรงข้ามกับ "${x.w}" คือคำไหน ?`,sayQ:`คำตรงข้ามกับ ${x.w} คือคำไหน`,
-        stage:`<div class="picture sm pop">${x.e}</div><div class="bigword">${x.w}</div>`,layout:"words",
-        opts:shuffle([x.opp,...others]).map(o=>({ok:o===x.opp,html:opt(o),sayTH:o.w})),
-        reveal:{big:`${x.e}<span class="bigletter" style="font-size:.5em">↔️</span>${x.opp.e}`,text:`${x.w} ตรงข้ามกับ ${x.opp.w}`,sayTH:`${x.w} ตรงข้ามกับ ${x.opp.w}`}};
+  th_opp:{sub:"th",icon:"🔃",th:"คำตรงข้าม",ds:"ใหญ่–เล็ก ร้อน–เย็น · อ่านเอง ไม่มีรูป",
+    /* one pair per question, never twice in a round */
+    items:n=>{ let a=[]; while(a.length<n) a=a.concat(shuffle(OPP_PAIRS.map((p,i)=>i))); return a.slice(0,n); },
+    gen:pi=>{
+      const pair=OPP_LIST.filter(o=>o.pair===pi), x=pick1(pair), ans=x.opp, opt=w=>`<span class="outline tx">${esc(w)}</span>`;
+      if(Math.random()<.35){
+        /* which pair are opposites? wrong pairs mix words from different themes */
+        const other=()=>{ const y=pick1(OPP_LIST.filter(o=>o.theme!==x.theme)); return [x.w,y.w]; };
+        const wrong=[]; if(OPP_NEAR[x.w]) wrong.push([x.w,OPP_NEAR[x.w]]);
+        for(let t=0;t<30 && wrong.length<3;t++){ const c=Math.random()<.5?other():other().reverse(); if(!wrong.some(w=>w.join()===c.join())) wrong.push(c); }
+        const right=Math.random()<.5?[x.w,ans.w]:[ans.w,x.w];
+        return {key:"xp"+pi,lang:"th",q:"คู่ไหน เป็นคำตรงข้ามกัน ?",sayQ:"คู่ไหน เป็นคำตรงข้ามกัน",stage:`<div class="hint" style="font-size:22px">อ่านคำในแต่ละคู่ให้ดีนะ</div>`,layout:"words",
+          opts:shuffle([right,...wrong]).map(c=>({ok:c===right,html:opt(c[0]+"  –  "+c[1]),sayTH:c.join(" กับ ")})),
+          reveal:{big:`<span class="bigword">${esc(x.w)} ↔️ ${esc(ans.w)}</span>`,text:`${esc(x.w)} ตรงข้ามกับ ${esc(ans.w)}`,sayTH:`${x.w} ตรงข้ามกับ ${ans.w}`}};
+      }
+      /* the opposite of a word: one look-alike (or the word itself), the rest from other pairs */
+      const trap = OPP_NEAR[x.w] || x.w;
+      const rest=shuffle(OPP_LIST.filter(o=>o.pair!==pi)).filter((o,i,a)=>a.findIndex(z=>z.pair===o.pair)===i).slice(0,2).map(o=>o.w);
+      return {key:"xw"+pi,lang:"th",q:`คำตรงข้ามกับ "${esc(x.w)}" คือคำไหน ?`,sayQ:`คำตรงข้ามกับ ${x.w} คือคำไหน`,
+        stage:`<div class="bigword">${esc(x.w)}</div>`,layout:"words",
+        opts:shuffle([ans.w,trap,...rest]).map(w=>({ok:w===ans.w,html:opt(w),sayTH:w})),
+        reveal:{big:`<span class="bigword">${esc(x.w)} ↔️ ${esc(ans.w)}</span>`,text:`${esc(x.w)} ตรงข้ามกับ ${esc(ans.w)}`+(OPP_NEAR[x.w]?`<br>ส่วน "${esc(OPP_NEAR[x.w])}" ความหมายเหมือน ${esc(x.w)}`:""),sayTH:`${x.w} ตรงข้ามกับ ${ans.w}`}};
     }},
   th_vowel:{sub:"th",needSound:true,icon:"🗣️",th:"ฟังเสียงสระ",ds:"ฟังแล้วเลือกคำที่ได้ยิน กา กี กู",
     gen:()=>{
@@ -2307,13 +2332,14 @@ function start(act, cat){
     items = pickWords(pool, round);
   } else if(def.items){ items = def.items(round); if(!items.length){ hub(def.sub); return; } }
   if(act==="story_q"){ items=STORIES[cat].q.slice(); round=items.length; }
-  G = {act, def, cat, items, i:0, score:0, round, tries:0, locked:false, last:null, active:true};
+  G = {act, def, cat, items, i:0, score:0, round, tries:0, locked:false, last:null, active:true, seen:new Set()};
   showQ();
 }
+/* a question already asked in this round is generated again (up to 40 tries), so a round rarely repeats itself */
 function makeQ(){
-  const d=G.def; let q;
-  for(let k=0;k<12;k++){ q=d.gen(G.items?G.items[G.i]:null); if(q.key!==G.last) break; }
-  G.last=q.key; return q;
+  const d=G.def; let q; G.seen=G.seen||new Set();
+  for(let k=0;k<40;k++){ q=d.gen(G.items?G.items[G.i]:null); if(!G.seen.has(q.key) && q.key!==G.last) break; }
+  G.seen.add(q.key); G.last=q.key; return q;
 }
 function boardHtml(q, stage){
   return `<div class="board"><div class="q outline">${q.q}</div><div class="stage">${stage}</div>
