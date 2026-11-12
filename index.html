@@ -2385,13 +2385,13 @@ function phSplit(w){ const out=[]; for(let i=0;i<w.length;){ const two=w.slice(i
 const PH_LBL = {a:"แอะ",b:"เบอะ",c:"เคอะ",d:"เดอะ",e:"เอะ",f:"เฟอะ",g:"เกอะ",h:"เฮอะ",i:"อิ",j:"เจอะ",k:"เคอะ",l:"เลอะ",m:"อึม",
   n:"อึน",o:"เอาะ",p:"เพอะ",q:"เควอะ",r:"เรอะ",s:"ซึ",t:"เทอะ",u:"อะ",v:"เวอะ",w:"เวอะ",x:"คซ",y:"เยอะ",z:"ซึ",
   sh:"ชู่ว",ch:"เชอะ",th:"เธอะ",wh:"เวอะ",ck:"เคอะ",ll:"เลอะ",ss:"ซึ"};
-const PH_EN = {a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fuh",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"luh",m:"muh",
-  n:"nuh",o:"aw",p:"puh",q:"kwuh",r:"er",s:"suh",t:"tuh",u:"uh",v:"vuh",w:"wuh",x:"ks",y:"yuh",z:"zuh",
-  sh:"shh",ch:"chuh",th:"the",wh:"wuh",ck:"kuh",ll:"luh",ss:"suh"};
-/* An English voice reads a made-up sound like "tuh" as a word ("two"), so only the sounds it says correctly
-   (real words or sounds it knows) use English. The rest use the Thai voice, which reads Thai spelling exactly. */
-const PH_EN_OK = {u:"uh",h:"huh",d:"duh",r:"er",v:"vuh",z:"zuh",sh:"shh",th:"the"};
-const phMode = () => ["mix","en","th"].includes(S.phMode) ? S.phMode : "mix";
+/* English voice: a made-up "tuh" gets read as a word ("two"), so every consonant ends in "-er", the one
+   ending every English voice reads the same way (her, per, sir, fur → เบอ เคอ เทอ). Real words where there are some. */
+const PH_EN = {a:"ah",b:"bur",c:"ker",d:"der",e:"eh",f:"fur",g:"gur",h:"her",i:"ih",j:"jer",k:"ker",l:"ler",m:"mer",
+  n:"ner",o:"aw",p:"per",q:"kwer",r:"er",s:"sir",t:"ter",u:"uh",v:"ver",w:"were",x:"ecks",y:"yer",z:"zer",
+  sh:"shh",ch:"cher",th:"thur",wh:"were",ck:"ker",ll:"ler",ss:"sir"};
+/* one voice for every sound: all English, or all Thai (Thai falls back to English when the device has no Thai voice) */
+const phMode = () => S.phMode==="th" && voiceTH ? "th" : "en";
 /* one sound as a play step, in the voice the parent picked */
 /* the parent's own recordings of each sound (kept in this browser), used before any computer voice */
 const PH_REC_KEYS = "abcdefghijklmnopqrstuvwxyz".split("").concat(["sh","ch","th","wh"]);
@@ -2431,8 +2431,7 @@ async function recTrim(blob){
 /* one sound as a play step: the parent's recording if there is one, otherwise the chosen voice */
 const phS = (g, elm, gap) => { const k=recKey(g), m=phMode();
   if(REC[k]) return ["rec",REC[k],elm,gap];
-  const en = m==="en" || (m==="mix" && PH_EN_OK[k]) || !voiceTH;
-  return en ? ["en",PH_EN[k]||k,elm,gap] : ["th",PH_SND[k]||k,elm,gap]; };
+  return m==="en" ? ["en",PH_EN[k]||k,elm,gap] : ["th",PH_SND[k]||k,elm,gap]; };
 const phRep = (g, n, elm, gap) => Array.from({length:n},(_,i)=>phS(g, i===0?elm:null, i===n-1?gap:200));
 /* play a list of steps: [lang, text, element-to-light?, pause-ms?] — sounds and English words in one go */
 function phPlay(steps, done){
@@ -3421,12 +3420,12 @@ function pEnglish(){
   lv.append(segGroup("enlevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],enLv(),v=>{S.enLevel=v;save();}));
   app.append(lv);
   const pv=el(`<div class="panel"><h3>🔤 เสียง Phonics</h3><p>เสียงตัวอักษร เช่น b c t ในบทเรียนและแบบฝึก Phonics<br>
-    <b>ผสม (แนะนำ):</b> แต่ละเสียงใช้เสียงที่อ่านได้ถูกที่สุด เสียงอังกฤษสำหรับ d h r u v z sh th และเสียงไทยสำหรับตัวที่เหลือ
-    (เสียงอังกฤษอ่านเสียงเดี่ยวอย่าง "tuh" ผิดเป็น "ทู" แต่เสียงไทยอ่าน ทึ แอะ ได้ตรงตัว)<br>
-    <b>อังกฤษล้วน / ไทยล้วน:</b> ใช้เสียงเดียวทั้งหมด · ถ้าเครื่องไม่มีเสียงภาษาไทย จะใช้เสียงอังกฤษเอง</p>
+    <b>อังกฤษ:</b> ทุกเสียงใช้เสียงอังกฤษ อ่านเป็น bur, ker, ter (ฟังเป็น เบอ เคอ เทอ)<br>
+    <b>ไทย:</b> ทุกเสียงใช้เสียงไทย อ่านเป็น บึ, คึ, ทึ · ถ้าเครื่องไม่มีเสียงภาษาไทย จะใช้เสียงอังกฤษแทน<br>
+    คำเต็ม เช่น cat ใช้เสียงอังกฤษเสมอ</p>
     <button class="chipbtn" style="margin-top:8px">🔊 ลองฟัง c · a · t → cat</button></div>`);
   pv.querySelector("button").onclick=()=>phPlay(phSteps("cat"));
-  pv.insertBefore(segGroup("phmode",[["mix","ผสม (แนะนำ)"],["en","อังกฤษล้วน"],["th","ไทยล้วน"]],phMode(),v=>{S.phMode=v;save();}), pv.querySelector("button"));
+  pv.insertBefore(segGroup("phmode",[["en","เสียงอังกฤษ"],["th","เสียงไทย"]],S.phMode==="th"?"th":"en",v=>{S.phMode=v;save();}), pv.querySelector("button"));
   app.append(pv);
   const rb=el(`<details class="panel"><summary><b>🎙️ อัดเสียง Phonics เอง (ไม่บังคับ)</b></summary><p>ถ้าอยากให้ลูกได้ยินเสียงพ่อแม่ อัดเฉพาะตัวที่ต้องการได้ ตัวที่อัดแล้วจะใช้เสียงนั้นแทนทุกที่<br>
     กด 🎙️ แล้วพูดเสียง<b>สั้น ๆ ทันที</b> เช่น "เบอะ" (ไม่ใช่ "บี") แล้วกด ⏹️ (หยุดเองใน 3 วินาที) · ตัวที่อัดแล้วมี ✅<br>
