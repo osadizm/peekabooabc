@@ -319,33 +319,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .matsec .mname{font-size:22px;background:var(--pink);color:#fff;box-shadow:0 3px 0 var(--pink-deep)}
 .matsec .mlet{font-size:16px;opacity:.8}
 .reveal .big .bigword{font-size:.55em}
-/* phonics */
-.phs{font-size:15px;color:#2f6f9e;background:#eef6fb;border-radius:999px;padding:2px 10px;display:inline-block;margin:2px auto 0;transition:.2s}
-.phs.phon{background:#fff3c4;transform:scale(1.15)}
-.phc .phe span.phon{transform:scale(1.3);background:#fff3c4}
-.ticket .phopt{display:block;width:100%;font-size:.42em;color:#2f6f9e;margin-top:.1em}
-.phgrid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
-.phc .phl{font-family:var(--display);font-weight:700;font-size:44px;color:var(--pink-deep);line-height:1.1}
-.phc .phe{font-size:38px;display:flex;justify-content:center;gap:6px;margin:4px 0}
-.phc .phe span{transition:transform .2s;border-radius:12px;padding:0 2px}
-.phc .phe span.on{transform:scale(1.3);background:#fff3c4}
-.phw span{display:inline-block;transition:.2s;opacity:.35}
-.phw span.lit{opacity:1;transform:scale(1.15)}
-.card .w.phw{color:var(--ink)}
-.phw .vw{color:#ef4444}
-.phw:not(:has(.lit)) span{opacity:1}
-.phtip{grid-column:1 / -1;margin:0 0 4px}
-.reclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:10px}
-.recrow{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:6px 10px;box-shadow:0 2px 0 rgba(0,0,0,.08)}
-.recrow b{font-size:28px;min-width:44px;font-family:var(--display);color:var(--pink-deep)}
-.recrow .rl{flex:1;font-size:17px;line-height:1.2}
-.recrow .rl small{display:block;font-size:14px;opacity:.7}
-.recrow .ok{visibility:hidden}
-.recrow.has .ok{visibility:visible}
-.recrow.on{outline:3px solid #ef4444}
-.recrow .chipbtn{padding:6px 9px;font-size:18px}
-.recmsg{color:#dc2626;font-weight:700;margin:4px 0 0}
-.recmsg:empty{display:none}
 /* stories */
 .stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .scard{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px 12px;border-radius:20px;background:#fff;border:3px solid #fff;box-shadow:0 5px 0 rgba(107,74,58,.12);transition:transform .15s}
@@ -1298,7 +1271,7 @@ const SIMILAR = [
 /* math level: easy = pictures, hard = numbers only + missing parts, mixed = either, chosen per question */
 const mHard = () => S.maLevel==="hard" || (S.maLevel==="mixed" && Math.random()<.5);
 const THAI_WORD = /^[\u0E00-\u0E7F]{2,8}$/;
-const LEARN = [{id:"en_learn",sub:"en",th:"ท่องศัพท์"},{id:"th_learn",sub:"th",th:"ท่อง ก–ฮ"},{id:"th_mat_learn",sub:"th",th:"ท่องมาตราตัวสะกด"},{id:"ph_l1",sub:"ph",th:"เสียงตัวอักษร A–Z"},{id:"ph_l2",sub:"ph",th:"สระเสียงสั้น"},{id:"ph_l3",sub:"ph",th:"ครอบครัวคำ"},{id:"ph_l4",sub:"ph",th:"สองตัว เสียงเดียว"}];
+const LEARN = [{id:"en_learn",sub:"en",th:"ท่องศัพท์"},{id:"th_learn",sub:"th",th:"ท่อง ก–ฮ"},{id:"th_mat_learn",sub:"th",th:"ท่องมาตราตัวสะกด"}];
 let OFF = new Set(S.off);
 function save(){ S.off=[...OFF]; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 function applyCase(){ document.body.classList.toggle("upper", !!S.upper); }
@@ -1401,7 +1374,7 @@ function say(text, rate=0.8, onend, lang="en-US"){
   wait ? setTimeout(()=>go(false), wait) : go(false);
 }
 const sayTH = (t, onend) => say(t, 0.95, onend, "th-TH");
-function hush(){ TOKEN++; if(window.curAudio){ try{ curAudio.pause(); }catch(e){} curAudio=null; } try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
+function hush(){ TOKEN++; try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
 /* letter names written out so every voice reads them clearly */
 const LETTER = {a:"ay",b:"bee",c:"see",d:"dee",e:"ee",f:"eff",g:"jee",h:"aitch",i:"eye",j:"jay",k:"kay",l:"el",m:"em",
   n:"en",o:"oh",p:"pee",q:"cue",r:"ar",s:"ess",t:"tee",u:"you",v:"vee",w:"double you",x:"ex",y:"why",z:"zee"};
@@ -1460,7 +1433,6 @@ const PRAISE_TH = ["เก่งมาก","เยี่ยมเลย","ถู
 
 /* =================== NAVIGATION =================== */
 const SUBJ = {
-  ph:{th:"Phonics",sub:"เสียงตัวอักษร",icon:"🔤",bg:"var(--en)",hide:true},
   en:{th:"ภาษาอังกฤษ",sub:"English",icon:"🔤",bg:"var(--en)"},
   th:{th:"ภาษาไทย",sub:"ก ข ค",icon:"🐔",bg:"var(--th)"},
   ma:{th:"คณิตศาสตร์",sub:"1 2 3",icon:"🔢",bg:"var(--ma)"},
@@ -1527,7 +1499,6 @@ function home(){
   app.append(el(`<div class="hero"><h1 class="outline">หนูน้อยพร้อมเข้า ป.1</h1><p>เลือกวิชาที่อยากเล่นเลย</p></div>`));
   const g = el(`<div class="subjects"></div>`);
   for(const [k,s] of Object.entries(SUBJ)){
-    if(s.hide) continue;
     const b = el(`<button class="subj" style="background:${s.bg}"><span class="ic">${s.icon}</span><span class="nm">${s.th}</span><span class="sub">${s.sub}</span></button>`);
     b.onclick=()=>hub(k); g.append(b);
   }
@@ -1537,7 +1508,7 @@ function home(){
 
 function hub(sub){
   if(sub==="story"){ storyList(); return; }
-  screen(sub==="ph" ? {back:()=>hub("en"),backLabel:"ภาษาอังกฤษ"} : {});
+  screen({});
   const s = SUBJ[sub];
   app.append(el(`<div class="hubhead"><h2 class="outline">${s.icon} ${s.th}</h2><p>เลือกเกมที่อยากเล่น</p></div>`));
   const list = el(`<div class="acts"></div>`);
@@ -1549,15 +1520,6 @@ function hub(sub){
     if(actOn("en_learn")) add("📖","ท่องศัพท์","ฟังเสียง ดูการสะกดทีละตัว",()=>pickCat("learn"),"learn");
     const wk = weakWords().length;
     if(wk) add("🔁","ทบทวนคำที่ยังผิด",`มี ${wk} คำที่ควรฝึกอีก`,()=>start("en_review"),"review");
-    add("🔤","Phonics","บทเรียนเสียงตัวอักษร แบบฝึก และแบบทดสอบ",()=>hub("ph"),"review");
-  }
-  if(sub==="ph"){
-    list.append(el(`<div class="tip phtip">เรียนตามลำดับ 1 → 4 แล้วทำแบบฝึก เมื่อคล่องแล้วทำ 📝 แบบทดสอบ</div>`));
-    [["ph_l1","🔤","1. เสียงตัวอักษร A–Z","a apple · b ball · c cat",phLetters],
-     ["ph_l2","🐱","2. สระเสียงสั้น","cat · pen · pig · dog · sun",phVowels],
-     ["ph_l3","👪","3. ครอบครัวคำ","-at: cat hat bat · -en: hen pen ten",phFamilies],
-     ["ph_l4","🚢","4. สองตัว เสียงเดียว","sh ship · ch chick · th thumb · wh whale",phDigraphs]]
-      .forEach(([id,ic,nm,ds,fn])=>{ if(actOn(id)) add(ic,nm,ds,fn,"learn"); });
   }
   if(sub==="th" && actOn("th_learn")) add("📖","ท่อง ก–ฮ","แตะตัวอักษรเพื่อฟังเสียง",thaiLearn,"learn");
   if(sub==="th" && actOn("th_mat_learn")) add("📚","ท่องมาตราตัวสะกด","แม่ ก กา กก กง กด กน กบ กม เกย เกอว",matLearn,"learn");
@@ -2354,247 +2316,6 @@ function thLetterOpts(x){
 }
 function fillRound(pool,n){ if(!pool.length) return []; let a=[]; while(a.length<n) a=a.concat(shuffle(pool)); return a.slice(0,n); }
 
-/* =================== PHONICS =================== */
-/* keywords for each letter sound (every picture is an emoji from 2018 or earlier) */
-const PH_AZ = {
-  a:[["apple","🍎"],["ant","🐜"],["alligator","🐊"]], b:[["ball","⚽"],["bee","🐝"],["bear","🐻"]],
-  c:[["cat","🐱"],["car","🚗"],["cake","🍰"]], d:[["dog","🐶"],["duck","🦆"],["door","🚪"]],
-  e:[["egg","🥚"],["elephant","🐘"],["envelope","✉️"]], f:[["fish","🐟"],["fox","🦊"],["frog","🐸"]],
-  g:[["goat","🐐"],["gift","🎁"],["grapes","🍇"]], h:[["hat","👒"],["horse","🐴"],["house","🏠"]],
-  i:[["insect","🐞"],["iguana","🦎"],["ink","🖋️"]], j:[["jet","✈️"],["jeans","👖"],["jacket","🧥"]],
-  k:[["key","🔑"],["king","🤴"],["kangaroo","🦘"]], l:[["lion","🦁"],["lemon","🍋"],["leaf","🍃"]],
-  m:[["moon","🌙"],["monkey","🐵"],["milk","🥛"]], n:[["nose","👃"],["nut","🥜"],["net","🥅"]],
-  o:[["octopus","🐙"],["ox","🐂"],["orange","🍊"]], p:[["pig","🐷"],["pen","🖊️"],["panda","🐼"]],
-  q:[["queen","👸"],["question","❓"],["quiet","🤫"]], r:[["rabbit","🐰"],["rain","🌧️"],["ring","💍"]],
-  s:[["sun","☀️"],["snake","🐍"],["star","⭐"]], t:[["tiger","🐯"],["tree","🌳"],["train","🚆"]],
-  u:[["umbrella","☂️"],["up","⬆️"],["upset","😟"]], v:[["van","🚐"],["violin","🎻"],["volcano","🌋"]],
-  w:[["wolf","🐺"],["watch","⌚"],["web","🕸️"]], x:[["fox","🦊"],["box","📦"],["six","6️⃣"]],
-  y:[["yarn","🧶"],["yacht","⛵"],["yes","✔️"]], z:[["zebra","🦓"],["zero","0️⃣"],["zip","🤐"]]
-};
-/* the SOUND of each letter written in Thai, spoken with the Thai voice (an English voice can only say letter names) */
-/* written with the short vowel อึ (บึ, คึ, ดึ): Thai voices read these as one short sound.
-   Spellings like "เคอะ" get split into "เค-อะ" by some voices, so they are avoided. */
-const PH_SND = {a:"แอะ",b:"บึ",c:"คึ",d:"ดึ",e:"เอะ",f:"ฟึ",g:"กึ",h:"ฮึ",i:"อิ",j:"จึ",k:"คึ",l:"ลึ",m:"อึม",
-  n:"อึน",o:"เอาะ",p:"พึ",q:"ควึ",r:"รึ",s:"ซึ",t:"ทึ",u:"อะ",v:"วึ",w:"วึ",x:"คึซึ",y:"ยึ",z:"ซึ",
-  sh:"ชู่ว",ch:"ชึ",th:"ธึ",wh:"วึ",ck:"คึ",ll:"ลึ",ss:"ซึ"};
-/* split a short word into its sounds: two-letter sounds stay together (sh, ch, th, wh, ck, ll, ss) */
-function phSplit(w){ const out=[]; for(let i=0;i<w.length;){ const two=w.slice(i,i+2); if(i+1<w.length && PH_SND[two] && two.length===2){ out.push(two); i+=2; } else { out.push(w[i]); i++; } } return out; }
-/* the same sounds for an English voice (default), so they are not said with a Thai accent */
-/* how each sound is written on screen for parents (เบอะ เทอะ). The Thai voice reads these badly (เบ-อะ),
-   so it speaks PH_SND instead */
-const PH_LBL = {a:"แอะ",b:"เบอะ",c:"เคอะ",d:"เดอะ",e:"เอะ",f:"เฟอะ",g:"เกอะ",h:"เฮอะ",i:"อิ",j:"เจอะ",k:"เคอะ",l:"เลอะ",m:"อึม",
-  n:"อึน",o:"เอาะ",p:"เพอะ",q:"เควอะ",r:"เรอะ",s:"ซึ",t:"เทอะ",u:"อะ",v:"เวอะ",w:"เวอะ",x:"คซ",y:"เยอะ",z:"ซึ",
-  sh:"ชู่ว",ch:"เชอะ",th:"เธอะ",wh:"เวอะ",ck:"เคอะ",ll:"เลอะ",ss:"ซึ"};
-/* English voice: a made-up "tuh" gets read as a word ("two"), so every consonant ends in "-er", the one
-   ending every English voice reads the same way (her, per, sir, fur → เบอ เคอ เทอ). Real words where there are some. */
-const PH_EN = {a:"ah",b:"bur",c:"ker",d:"der",e:"eh",f:"fur",g:"gur",h:"her",i:"ih",j:"jer",k:"ker",l:"ler",m:"mer",
-  n:"ner",o:"aw",p:"per",q:"kwer",r:"er",s:"sir",t:"ter",u:"uh",v:"ver",w:"were",x:"ecks",y:"yer",z:"zer",
-  sh:"shh",ch:"cher",th:"thur",wh:"were",ck:"ker",ll:"ler",ss:"sir"};
-/* one voice for every sound: all English, or all Thai (Thai falls back to English when the device has no Thai voice) */
-const phMode = () => S.phMode==="th" && voiceTH ? "th" : "en";
-/* one sound as a play step, in the voice the parent picked */
-/* the parent's own recordings of each sound (kept in this browser), used before any computer voice */
-const PH_REC_KEYS = "abcdefghijklmnopqrstuvwxyz".split("").concat(["sh","ch","th","wh"]);
-const PH_ALIAS = {ck:"k",ll:"l",ss:"s"};
-const REC = {}; var curAudio = null, recDB = null, recMR = null;
-const recKey = g => PH_ALIAS[g]||g;
-function recOpen(){ return recDB || (recDB = new Promise((ok,no)=>{ try{ const r=indexedDB.open("p1-sounds",1);
-  r.onupgradeneeded=()=>r.result.createObjectStore("s"); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }catch(e){ no(e); } })); }
-function recTx(fn){ return recOpen().then(db=>new Promise((ok,no)=>{ const t=db.transaction("s","readwrite"); fn(t.objectStore("s")); t.oncomplete=ok; t.onerror=()=>no(t.error); })); }
-function recLoad(){ return recOpen().then(db=>new Promise(ok=>{ const rq=db.transaction("s","readonly").objectStore("s").openCursor();
-  rq.onsuccess=()=>{ const c=rq.result; if(!c) return ok(); if(REC[c.key]) URL.revokeObjectURL(REC[c.key]); REC[c.key]=URL.createObjectURL(c.value); c.continue(); };
-  rq.onerror=()=>ok(); })).catch(()=>{}); }
-recLoad();
-function recPlay(url, done){
-  let fin=false; const end=()=>{ if(fin) return; fin=true; if(curAudio===a) curAudio=null; if(done) done(); };
-  if(curAudio){ try{ curAudio.pause(); }catch(e){} }
-  const a=new Audio(url); curAudio=a; a.onended=end; a.onerror=end; setTimeout(end,4000);
-  try{ const pr=a.play(); if(pr && pr.catch) pr.catch(end); }catch(e){ end(); }
-}
-/* cut the quiet before and after the sound, so blending (c · a · t) does not drag */
-async function recTrim(blob){
-  try{
-    const AC=window.AudioContext||window.webkitAudioContext, ac=new AC();
-    const ab=await blob.arrayBuffer(); const buf=await new Promise((ok,no)=>ac.decodeAudioData(ab,ok,no)); try{ ac.close(); }catch(e){}
-    const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++){ const v=Math.abs(d[i]); if(v>peak) peak=v; }
-    const th=Math.max(0.015,peak*0.08); let a=0,b=d.length-1;
-    while(a<d.length && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
-    if(b<=a) return blob;
-    a=Math.max(0,a-Math.round(sr*0.04)); b=Math.min(d.length,b+Math.round(sr*0.1));
-    const n=b-a, v=new DataView(new ArrayBuffer(44+n*2)), w=(o,t)=>{ for(let i=0;i<t.length;i++) v.setUint8(o+i,t.charCodeAt(i)); };
-    w(0,"RIFF"); v.setUint32(4,36+n*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-    v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,n*2,true);
-    for(let i=0;i<n;i++){ const x=Math.max(-1,Math.min(1,d[a+i])); v.setInt16(44+i*2, x<0?x*0x8000:x*0x7fff, true); }
-    return new Blob([v],{type:"audio/wav"});
-  }catch(e){ return blob; }
-}
-/* one sound as a play step: the parent's recording if there is one, otherwise the chosen voice */
-const phS = (g, elm, gap) => { const k=recKey(g), m=phMode();
-  if(REC[k]) return ["rec",REC[k],elm,gap];
-  return m==="en" ? ["en",PH_EN[k]||k,elm,gap] : ["th",PH_SND[k]||k,elm,gap]; };
-const phRep = (g, n, elm, gap) => Array.from({length:n},(_,i)=>phS(g, i===0?elm:null, i===n-1?gap:200));
-/* play a list of steps: [lang, text, element-to-light?, pause-ms?] — sounds and English words in one go */
-function phPlay(steps, done){
-  hush(); const tok=TOKEN; let i=0;
-  const nx=()=>{ if(tok!==TOKEN) return; document.querySelectorAll(".phon").forEach(e=>e.classList.remove("phon"));
-    if(i>=steps.length){ if(done) done(); return; }
-    const [lang,text,elm,gap]=steps[i++]; if(elm) elm.classList.add("phon","lit");
-    const go=()=>later(nx, gap==null?250:gap);
-    if(lang==="rec") recPlay(text,go); else if(lang==="th") sayTH(text,go); else say(text,0.7,go); };
-  nx();
-}
-/* sound-by-sound then the whole word: เคอะ แอะ เทอะ … cat */
-const phSteps = (w, els=[]) => phSplit(w).map((g,i)=>phS(g,els[i],180)).concat([["en",w,null,300]]);
-/* letters that make the same first sound must never be each other's wrong answer */
-const PH_SAME = ["ck","cq","kq"];
-const phClash = (a,b) => PH_SAME.includes([a,b].sort().join(""));
-const PH_START = Object.entries(PH_AZ).filter(([l])=>l!=="x").flatMap(([l,ws])=>ws.map(([w,e])=>({l,w,e})));
-
-/* short-vowel words: consonant, vowel, consonant */
-const PH_CVC = {
-  a:[["cat","🐱"],["hat","👒"],["bat","🦇"],["rat","🐀"],["cap","🧢"],["map","🗺️"],["van","🚐"],["can","🥫"],["pan","🍳"],["man","👨"],["bag","🎒"]],
-  e:[["hen","🐔"],["pen","🖊️"],["ten","🔟"],["bed","🛏️"],["red","🔴"],["net","🥅"],["jet","✈️"],["wet","💦"],["web","🕸️"],["leg","🦵"]],
-  i:[["pig","🐷"],["pin","📌"],["bin","🗑️"],["lip","👄"],["six","6️⃣"],["kid","👦"],["zip","🤐"]],
-  o:[["dog","🐶"],["fox","🦊"],["box","📦"],["pot","🍲"],["hot","🔥"],["mop","🧹"]],
-  u:[["sun","☀️"],["bus","🚌"],["cup","☕"],["bug","🐛"],["hug","🤗"],["nut","🥜"],["tub","🛁"]]
-};
-const PH_VSAY = {a:"แอะ",e:"เอะ",i:"อิ",o:"เอาะ",u:"อะ"};
-const CVC = Object.entries(PH_CVC).flatMap(([v,ws])=>ws.map(([w,e])=>({w,e,v})));
-/* word families (-at, -an …) with two or more words */
-const PH_FAM = (()=>{ const f={}; CVC.forEach(x=>{ const k=x.w.slice(1); (f[k]=f[k]||[]).push(x); }); return Object.fromEntries(Object.entries(f).filter(([k,v])=>v.length>=2)); })();
-/* two letters, one sound */
-const PH_DI = {
-  sh:{say:"ช แบบจุ๊ปาก ชู่ว", w:[["ship","🚢"],["shoe","👟"],["sheep","🐑"],["shell","🐚"],["shark","🦈"],["shirt","👕"]]},
-  ch:{say:"ช", w:[["chick","🐤"],["chair","💺"],["cheese","🧀"],["cherry","🍒"],["church","⛪"],["chain","⛓️"]]},
-  th:{say:"ธ ลิ้นแตะฟัน", w:[["thumb","👍"],["three","3️⃣"],["thread","🧵"],["think","🤔"]]},
-  wh:{say:"ว", w:[["whale","🐳"],["wheat","🌾"],["white","⬜"],["wheelchair","♿"]]}
-};
-const DIW = Object.entries(PH_DI).flatMap(([d,o])=>o.w.map(([w,e])=>({d,w,e})));
-
-/* ---------- lessons ---------- */
-function phHead(t,sub){ screen({back:()=>hub("ph"),backLabel:"Phonics"}); app.append(el(`<div class="hubhead"><h2 class="outline">${t}</h2><p>${sub}</p></div>`)); }
-function phLetters(){
-  phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น เบอะ… ball");
-  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "เบอะ" · ตัวหนังสือไทยใต้ตัวอักษรเป็นคำอ่านโดยประมาณ ให้ผู้ปกครองช่วยออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
-  const g=el(`<div class="grid phgrid"></div>`);
-  Object.entries(PH_AZ).forEach(([l,ws])=>{
-    const c=el(`<button class="card phc"><div class="phl wt">${l.toUpperCase()}${l}</div><div class="phs">เสียง /${PH_LBL[l]}/</div><div class="phe">${ws.map(([w,e])=>`<span>${e}</span>`).join("")}</div><div class="t">${ws.map(([w])=>w).join(" · ")}</div>${l==="x"?`<div class="t">x มักอยู่ท้ายคำ</div>`:""}</button>`);
-    /* "เบอะ เบอะ … เบอะ ball … เบอะ bee …" */
-    c.onclick=()=>{ const sp=[...c.querySelectorAll(".phe span")], snd=PH_SND[l];
-      const steps=phRep(l,2,c.querySelector(".phs"),400);
-      ws.forEach(([w],i)=>{ if(l!=="x") steps.push(phS(l,sp[i],120)); steps.push(["en",w,sp[i],450]); });
-      phPlay(steps); };
-    g.append(c);
-  });
-  app.append(g);
-}
-/* blend: light each letter, then say the whole word (no letter names, so the sounds are not mixed up with A-B-C) */
-function phBlendCard(x, mid){
-  const parts=phSplit(x.w);
-  const c=el(`<button class="card"><div class="e">${pic(x.e)}</div><div class="w phw">${parts.map((g,i)=>`<span class="${mid!=null&&i===mid?"vw":""}">${esc(g)}</span>`).join("")}</div><div class="phs">${parts.map(g=>PH_LBL[g]||g).join(" · ")}</div></button>`);
-  c.onclick=()=>{ const sp=[...c.querySelectorAll(".phw span")]; sp.forEach(s=>s.classList.remove("lit")); phPlay(phSteps(x.w,sp),()=>sp.forEach(s=>s.classList.add("lit"))); };
-  return c;
-}
-function phVowels(){
-  phHead("🐱 สระเสียงสั้น a e i o u","แตะคำ ฟังเสียงทีละตัว แล้วอ่านรวมเป็นคำ เช่น เคอะ · แอะ · เทอะ → cat · ตัวสีแดงคือสระ");
-  Object.entries(PH_CVC).forEach(([v,ws])=>{
-    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${v}</button><span class="mlet">เสียง /${PH_LBL[v]}/</span></div><div class="grid"></div></div>`);
-    sec.querySelector(".mname").onclick=()=>phPlay(phRep(v,3));
-    ws.forEach(([w,e])=>sec.querySelector(".grid").append(phBlendCard({w,e},1)));
-    app.append(sec);
-  });
-}
-function phFamilies(){
-  phHead("👪 ครอบครัวคำ","คำในบ้านเดียวกันลงท้ายเหมือนกัน เปลี่ยนแค่ตัวแรก · แตะชื่อบ้านเพื่อฟังทุกคำ");
-  Object.entries(PH_FAM).forEach(([f,ws])=>{
-    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 -${f}</button><span class="mlet">${ws.map(x=>x.w).join(" · ")}</span></div><div class="grid"></div></div>`);
-    /* the family ending first (แอะ เทอะ → at), then every word */
-    sec.querySelector(".mname").onclick=()=>phPlay(phSplit(f).map(g=>phS(g,null,150)).concat([["en",f,null,500]],ws.map(x=>["en",x.w,null,350])));
-    ws.forEach(x=>sec.querySelector(".grid").append(phBlendCard(x)));
-    app.append(sec);
-  });
-}
-function phDigraphs(){
-  phHead("🚢 สองตัว เสียงเดียว","sh ch th wh · สองตัวอักษรรวมกันออกเสียงใหม่ 1 เสียง");
-  Object.entries(PH_DI).forEach(([d,o])=>{
-    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${d}</button><span class="mlet">เสียง /${PH_LBL[d]}/ · ${o.say}</span></div><div class="grid"></div></div>`);
-    sec.querySelector(".mname").onclick=()=>phPlay(phRep(d,2));
-    o.w.forEach(([w,e])=>{
-      const c=el(`<button class="card"><div class="e">${pic(e)}</div><div class="w phw wt"><span class="vw">${d}</span>${esc(w.slice(2))}</div></button>`);
-      c.onclick=()=>phPlay([phS(d,c.querySelector(".vw"),150),["en",w,null,300]]); sec.querySelector(".grid").append(c);
-    });
-    app.append(sec);
-  });
-}
-
-/* ---------- practice ---------- */
-const phOptPic = x => ({html:pic(x.e), say:x.w});
-const phSpeak = w => ()=>say(w,0.7);
-const phReveal = (x, text) => ({big:pic(x.e), text:`<b class="wt" style="font-size:1.4em">${esc(x.w)}</b><br>${text}`, sayEN:x.w});
-const PH_ACTS = {
-  ph_start:{sub:"ph",icon:"🅰️",th:"เสียงแรกของคำ",ds:"ฟังคำ แล้วเลือกตัวอักษรตัวแรก",
-    gen:()=>{
-      const x=pick1(PH_START), abc="abcdefghijklmnopqrstuvwyz".split("").filter(l=>l!==x.l && !phClash(l,x.l));
-      return {key:"ps"+x.w,lang:"th",q:"คำนี้ ขึ้นต้นด้วยเสียงตัวไหน ?",stage:`<div class="picture pop">${pic(x.e)}</div>`,
-        auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle([x.l,...shuffle(abc).slice(0,3)]).map(l=>({ok:l===x.l,html:`<span class="outline wt">${l}</span><span class="tx sm phopt">/${PH_LBL[l]}/</span>`,snd:l})),
-        reveal:{...phReveal(x,`ขึ้นต้นด้วยตัว ${x.l} เสียง /${PH_LBL[x.l]}/`),play:[phS(x.l),["en",x.w]]}};
-    }},
-  ph_same:{sub:"ph",icon:"👂",th:"เสียงแรกเหมือนกัน",ds:"รูปไหนขึ้นต้นด้วยเสียงเดียวกัน",
-    gen:()=>{
-      const x=pick1(PH_START), mate=pick1(PH_START.filter(o=>o.l===x.l && o.w!==x.w));
-      const others=shuffle(PH_START.filter(o=>o.l!==x.l && !phClash(o.l,x.l))).filter((o,i,a)=>a.findIndex(z=>z.l===o.l)===i).slice(0,2);
-      return {key:"pm"+x.w,lang:"en",q:`รูปไหน ขึ้นต้นด้วยเสียงเดียวกับ "${esc(x.w)}" ?`,
-        stage:`<div class="picture sm pop">${pic(x.e)}</div><div class="bigword wt" style="font-family:var(--display)">${esc(x.w)}</div>`,
-        auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"pics",
-        opts:shuffle([mate,...others]).map(o=>({ok:o===mate,...phOptPic(o)})),
-        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> กับ <b class="wt">${esc(mate.w)}</b> ขึ้นต้นด้วยเสียง /${PH_LBL[x.l]}/ เหมือนกัน`,play:[phS(x.l),["en",x.w],phS(x.l),["en",mate.w]]}};
-    }},
-  ph_vowel:{sub:"ph",icon:"🔡",th:"สระที่หายไป",ds:"c _ t เติมสระ a e i o u",
-    gen:()=>{
-      const x=pick1(CVC), ds=shuffle("aeiou".split("").filter(v=>v!==x.v)).slice(0,3);
-      return {key:"pv"+x.w,lang:"th",q:"สระที่หายไป คือตัวไหน ?",
-        stage:`<div class="picture sm pop">${pic(x.e)}</div><div class="blankword"><span class="wt">${x.w[0]}</span><span class="blank">?</span><span class="wt">${x.w[2]}</span></div>`,
-        auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle([x.v,...ds]).map(v=>({ok:v===x.v,html:`<span class="outline wt">${v}</span><span class="tx sm phopt">/${PH_LBL[v]}/</span>`,snd:v})),
-        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_LBL[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
-    }},
-  ph_blend:{sub:"ph",icon:"🧩",th:"อ่านคำเอง",ds:"ผสมเสียงทีละตัว แล้วเลือกรูป",
-    gen:()=>{
-      const x=pick1(CVC);
-      /* look-alike words: same first letter, same ending, or same vowel */
-      const near=shuffle(CVC.filter(o=>o!==x && o.e!==x.e && (o.w[0]===x.w[0] || o.w.slice(1)===x.w.slice(1) || o.v===x.v)));
-      const ds=near.concat(shuffle(CVC.filter(o=>o!==x && !near.includes(o)))).filter((o,i,a)=>a.findIndex(z=>z.e===o.e)===i).slice(0,3);
-      return {key:"pb"+x.w,lang:"en",q:"อ่านคำนี้ แล้วเลือกรูปให้ถูก",
-        stage:`<div class="letters" style="--n:3">${x.w.split("").map(ch=>`<b class="wt lit">${ch}</b>`).join("")}</div><div class="hint">ผสมเสียงทีละตัว แล้วอ่านรวมเป็นคำ</div>`,
-        listen:()=>sayTH("ผสมเสียงทีละตัว แล้วอ่านรวมเป็นคำนะ"),layout:"pics",
-        opts:shuffle([x,...ds]).map(o=>({ok:o===x,...phOptPic(o)})),
-        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_LBL[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
-    }},
-  ph_rhyme:{sub:"ph",icon:"🎵",th:"คำคล้องจอง",ds:"cat – hat ลงท้ายเหมือนกัน",
-    gen:()=>{
-      const f=pick1(Object.keys(PH_FAM)), [x,mate]=shuffle(PH_FAM[f]), hard=enLv()==="hard";
-      const sameStart=shuffle(CVC.filter(o=>o.w[0]===x.w[0] && o.w.slice(1)!==f && o.e!==x.e));
-      const ds=sameStart.slice(0,1).concat(shuffle(CVC.filter(o=>o.w.slice(1)!==f))).filter((o,i,a)=>a.findIndex(z=>z.w===o.w)===i).slice(0,2);
-      return {key:"pr"+x.w+mate.w,lang:"en",q:`คำไหน คล้องจองกับ "${esc(x.w)}" ?`,
-        stage:`${hard?"":`<div class="picture sm pop">${pic(x.e)}</div>`}<div class="bigword wt" style="font-family:var(--display)">${esc(x.w)}</div><div class="hint">คล้องจอง = ลงท้ายเหมือนกัน</div>`,
-        auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",optCls:"storyopts",
-        opts:shuffle([mate,...ds]).map(o=>({ok:o===mate,html:`${hard?"":`<span class="oe">${pic(o.e)}</span>`}<span class="outline wt">${esc(o.w)}</span>`,say:o.w})),
-        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> – <b class="wt">${esc(mate.w)}</b> ลงท้ายด้วย -${f} เหมือนกัน`,play:[["en",x.w],["en",mate.w],...phSplit(f).map(g=>phS(g)),["en",f]]}};
-    }},
-  ph_di:{sub:"ph",icon:"🚢",th:"sh ch th wh",ds:"คำนี้ขึ้นต้นด้วยเสียงไหน",
-    gen:()=>{
-      const x=pick1(DIW);
-      return {key:"pd"+x.w,lang:"th",q:"คำนี้ ขึ้นต้นด้วยอะไร ?",stage:`<div class="picture pop">${pic(x.e)}</div>`,
-        auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle(Object.keys(PH_DI)).map(d=>({ok:d===x.d,html:`<span class="outline wt">${d}</span><span class="tx sm phopt">/${PH_LBL[d]}/</span>`,snd:d})),
-        reveal:{...phReveal(x,`ขึ้นต้นด้วย ${x.d} เสียง /${PH_LBL[x.d]}/`),play:[phS(x.d),["en",x.w]]}};
-    }},
-  /* the test: a mix of every practice type */
-  ph_test:{sub:"ph",icon:"📝",th:"แบบทดสอบ Phonics",ds:"รวมทุกแบบฝึก วัดผลว่าเข้าใจแค่ไหน",
-    gen:()=>{ const k=pick1(["ph_start","ph_same","ph_vowel","ph_blend","ph_rhyme","ph_di"]); const q=ACTS[k].gen(); q.key=k+q.key; q.tag=ACTS[k].th; return q; }}
-};
-Object.assign(ACTS, PH_ACTS);
 /* =================== GAME ENGINE =================== */
 function weight(x){ const s=stat(x); if(!s) return 2; if(s.w>0&&s.r<3) return 4; if(s.r>=3) return 1; return 2; }
 function pickWords(pool,n){
@@ -2654,7 +2375,6 @@ function answer(btn,o){
   hush();
   if(!o.ok){
     G.tries++; btn.classList.add("wrong");
-    if(o.snd){ phPlay([phS(o.snd)],()=>sayTH("ลองใหม่นะ")); return; }
     if(G.q.lang==="en") o.say ? say(o.say,0.8,()=>say("Try again!",0.9)) : say("Try again!",0.9);
     else if(G.q.multi) sayTH("ไม่มีเงานี้ ลองใหม่นะ");
     else o.sayTH ? sayTH(o.sayTH,()=>sayTH("ลองใหม่นะ")) : sayTH("ลองใหม่นะ");
@@ -2675,7 +2395,6 @@ function answer(btn,o){
 }
 function record(q){
   const first = G.tries===0;
-  if(q.tag){ G.tags=G.tags||{}; const t=G.tags[q.tag]||(G.tags[q.tag]={r:0,t:0}); t.t++; if(first) t.r++; }
   const p = S.prog[G.act] || (S.prog[G.act]={r:0,t:0}); p.t++; if(first) p.r++;
   if(q.id){ const s=S.stats[q.id]||(S.stats[q.id]={r:0,w:0}); if(first) s.r++; else { s.w++; s.r=0; } }
   save();
@@ -2704,7 +2423,6 @@ function win(q){
         if(quiet>=3000 || total>=60000){ clearInterval(wd); showNext(); }
       },500); }
     if(R.word){ const boxes=[...r.querySelectorAll(".letters b")]; say(first?"Great job!":"Good!",0.95,()=>spell(R.word,boxes,()=>{ if(R.th) later(()=>sayTH(R.th,showNext),250); else showNext(); })); }
-    else if(R.play) say(first?"Great job!":"Good!",0.95,()=>later(()=>phPlay(R.play,showNext),250));
     else if(R.sayEN) say(first?"Great job!":"Good!",0.95,()=>say(R.sayEN,0.8,showNext));
     else sayTH(first?"เก่งมาก":"ถูกแล้ว", ()=>{ if(R.sayTH) setTimeout(()=>sayTH(R.sayTH,showNext),250); else showNext(); });
     nb.onclick=()=>{ if(nb.classList.contains("wait")) return; hush(); G.i++; G.i<G.round ? showQ() : finish(); };
@@ -2761,7 +2479,6 @@ function finish(){
   screen({stars:true, back:backOf(act)});
   const e=el(`<div class="end"><h2 class="outline">${msg}</h2><div class="big">${"⭐".repeat(Math.max(1,Math.round(s/R*5)))}</div>
     <p style="font-size:20px;margin:0">ตอบถูกในครั้งแรก ${s} จาก ${R} ข้อ<br>${def.th}${act==="story_q" ? " · "+esc(STORIES[cat].t) : cat ? " · "+(cat==="mix"?"รวมทุกหมวด":CAT[cat].th) : ""}</p>
-    ${G.tags ? `<div class="tablewrap" style="margin-top:14px"><table class="rep">${Object.entries(G.tags).map(([k,v])=>`<tr><td style="text-align:left">${k}</td><td class="n">${v.r===v.t?"✅":"🔁"} ${v.r} / ${v.t}</td></tr>`).join("")}</table></div><p style="font-size:15px;margin:6px 0 0">🔁 = ควรฝึกเพิ่มในแบบฝึกนั้น</p>` : ""}
     <div class="prize ${bad?"lost":""}">${prize}</div>${bad?`<p style="font-size:17px;margin:10px 0 0">ตอบถูกครึ่งหนึ่งขึ้นไป จะได้สติกเกอร์นะ ลองใหม่อีกครั้ง!</p>`:""}
     <div class="acts2"><button class="next">🔁 เล่นอีกครั้ง</button><button class="chipbtn" id="b2">📒 สมุดสติกเกอร์</button><button class="chipbtn" id="b3"><i class="chev l"></i>เลือกเกมอื่น</button></div></div>`);
   e.querySelector(".next").onclick=()=>start(act,cat);
@@ -3419,46 +3136,6 @@ function pEnglish(){
     <b>ยาก:</b> ตาราง 8×8 หา 8 คำ มีแนวทแยง และเห็นแค่รูป ต้องจำตัวสะกดเอง (แตะรูปเพื่อแอบดูคำได้)</p></div>`);
   lv.append(segGroup("enlevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],enLv(),v=>{S.enLevel=v;save();}));
   app.append(lv);
-  const pv=el(`<div class="panel"><h3>🔤 เสียง Phonics</h3><p>เสียงตัวอักษร เช่น b c t ในบทเรียนและแบบฝึก Phonics<br>
-    <b>อังกฤษ:</b> ทุกเสียงใช้เสียงอังกฤษ อ่านเป็น bur, ker, ter (ฟังเป็น เบอ เคอ เทอ)<br>
-    <b>ไทย:</b> ทุกเสียงใช้เสียงไทย อ่านเป็น บึ, คึ, ทึ · ถ้าเครื่องไม่มีเสียงภาษาไทย จะใช้เสียงอังกฤษแทน<br>
-    คำเต็ม เช่น cat ใช้เสียงอังกฤษเสมอ</p>
-    <button class="chipbtn" style="margin-top:8px">🔊 ลองฟัง c · a · t → cat</button></div>`);
-  pv.querySelector("button").onclick=()=>phPlay(phSteps("cat"));
-  pv.insertBefore(segGroup("phmode",[["en","เสียงอังกฤษ"],["th","เสียงไทย"]],S.phMode==="th"?"th":"en",v=>{S.phMode=v;save();}), pv.querySelector("button"));
-  app.append(pv);
-  const rb=el(`<details class="panel"><summary><b>🎙️ อัดเสียง Phonics เอง (ไม่บังคับ)</b></summary><p>ถ้าอยากให้ลูกได้ยินเสียงพ่อแม่ อัดเฉพาะตัวที่ต้องการได้ ตัวที่อัดแล้วจะใช้เสียงนั้นแทนทุกที่<br>
-    กด 🎙️ แล้วพูดเสียง<b>สั้น ๆ ทันที</b> เช่น "เบอะ" (ไม่ใช่ "บี") แล้วกด ⏹️ (หยุดเองใน 3 วินาที) · ตัวที่อัดแล้วมี ✅<br>
-    เสียงเก็บไว้ในเครื่องนี้เท่านั้น ไม่รวมอยู่ในรหัสสำรองข้อมูล ถ้าใช้หลายเครื่องต้องอัดแยก</p><p class="recmsg"></p><div class="reclist"></div></details>`);
-  const msg=rb.querySelector(".recmsg"), list=rb.querySelector(".reclist");
-  PH_REC_KEYS.forEach(k=>{
-    const ex=PH_AZ[k] ? PH_AZ[k][0][0] : PH_DI[k].w[0][0];
-    const row=el(`<div class="recrow ${REC[k]?"has":""}"><b class="wt">${k}</b><span class="rl">/${PH_LBL[k]}/<small>${ex}</small></span><span class="ok">✅</span>
-      <button class="chipbtn rr" aria-label="อัด">🎙️</button><button class="chipbtn rp" aria-label="ฟัง">▶️</button><button class="chipbtn rd" aria-label="ลบ">🗑️</button></div>`);
-    const btn=row.querySelector(".rr");
-    btn.onclick=async()=>{
-      if(recMR){ if(recMR.state==="recording") recMR.stop(); return; }
-      hush(); msg.textContent="";
-      if(!navigator.mediaDevices || !window.MediaRecorder){ msg.textContent="เบราว์เซอร์นี้อัดเสียงไม่ได้ ลองเปิดด้วย Safari (iPhone) หรือ Chrome/Edge"; return; }
-      let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
-      catch(e){ msg.textContent="เปิดไมค์ไม่ได้ ให้กดอนุญาตไมโครโฟนให้เว็บนี้ แล้วลองใหม่"; return; }
-      const chunks=[], mr=new MediaRecorder(stream); recMR=mr;
-      mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
-      mr.onstop=async()=>{
-        stream.getTracks().forEach(t=>t.stop()); recMR=null; btn.textContent="🎙️"; row.classList.remove("on");
-        if(!chunks.length) return;
-        const blob=await recTrim(new Blob(chunks,{type:chunks[0].type||mr.mimeType||"audio/webm"}));
-        try{ await recTx(st=>st.put(blob,k)); }catch(e){ msg.textContent="บันทึกเสียงไม่ได้ (พื้นที่เครื่องเต็ม หรืออยู่ในโหมดส่วนตัว)"; return; }
-        if(REC[k]) URL.revokeObjectURL(REC[k]); REC[k]=URL.createObjectURL(blob); row.classList.add("has"); recPlay(REC[k]);
-      };
-      mr.start(); btn.textContent="⏹️"; row.classList.add("on");
-      setTimeout(()=>{ if(mr.state==="recording") mr.stop(); },3000);
-    };
-    row.querySelector(".rp").onclick=()=>{ hush(); phPlay([phS(k)]); };
-    row.querySelector(".rd").onclick=()=>{ if(!REC[k]) return; recTx(st=>st.delete(k)).catch(()=>{}); URL.revokeObjectURL(REC[k]); delete REC[k]; row.classList.remove("has"); };
-    list.append(row);
-  });
-  app.append(rb);
 
   const add=el(`<div class="panel"><h3>➕ เพิ่มคำศัพท์เอง</h3><p>ใส่คำภาษาอังกฤษ ความหมาย และรูปอีโมจิ (กดปุ่มอีโมจิบนแป้นพิมพ์มือถือแล้วเลือกรูป)</p>
     <form class="row" style="align-items:flex-end">
