@@ -335,6 +335,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .phw .vw{color:#ef4444}
 .phw:not(:has(.lit)) span{opacity:1}
 .phtip{grid-column:1 / -1;margin:0 0 4px}
+.reclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:10px}
+.recrow{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:6px 10px;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.recrow b{font-size:28px;min-width:44px;font-family:var(--display);color:var(--pink-deep)}
+.recrow .rl{flex:1;font-size:17px;line-height:1.2}
+.recrow .rl small{display:block;font-size:14px;opacity:.7}
+.recrow .ok{visibility:hidden}
+.recrow.has .ok{visibility:visible}
+.recrow.on{outline:3px solid #ef4444}
+.recrow .chipbtn{padding:6px 9px;font-size:18px}
+.recmsg{color:#dc2626;font-weight:700;margin:4px 0 0}
+.recmsg:empty{display:none}
 /* stories */
 .stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .scard{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px 12px;border-radius:20px;background:#fff;border:3px solid #fff;box-shadow:0 5px 0 rgba(107,74,58,.12);transition:transform .15s}
@@ -1390,7 +1401,7 @@ function say(text, rate=0.8, onend, lang="en-US"){
   wait ? setTimeout(()=>go(false), wait) : go(false);
 }
 const sayTH = (t, onend) => say(t, 0.95, onend, "th-TH");
-function hush(){ TOKEN++; try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
+function hush(){ TOKEN++; if(window.curAudio){ try{ curAudio.pause(); }catch(e){} curAudio=null; } try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
 /* letter names written out so every voice reads them clearly */
 const LETTER = {a:"ay",b:"bee",c:"see",d:"dee",e:"ee",f:"eff",g:"jee",h:"aitch",i:"eye",j:"jay",k:"kay",l:"el",m:"em",
   n:"en",o:"oh",p:"pee",q:"cue",r:"ar",s:"ess",t:"tee",u:"you",v:"vee",w:"double you",x:"ex",y:"why",z:"zee"};
@@ -2375,11 +2386,53 @@ const PH_LBL = {a:"แอะ",b:"เบอะ",c:"เคอะ",d:"เดอะ"
   n:"อึน",o:"เอาะ",p:"เพอะ",q:"เควอะ",r:"เรอะ",s:"ซึ",t:"เทอะ",u:"อะ",v:"เวอะ",w:"เวอะ",x:"คซ",y:"เยอะ",z:"ซึ",
   sh:"ชู่ว",ch:"เชอะ",th:"เธอะ",wh:"เวอะ",ck:"เคอะ",ll:"เลอะ",ss:"ซึ"};
 const PH_EN = {a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fuh",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"luh",m:"muh",
-  n:"nuh",o:"aw",p:"puh",q:"kwuh",r:"ruh",s:"suh",t:"tuh",u:"uh",v:"vuh",w:"wuh",x:"ks",y:"yuh",z:"zuh",
-  sh:"shh",ch:"chuh",th:"thuh",wh:"wuh",ck:"kuh",ll:"luh",ss:"suh"};
-const phTH = () => S.phVoice==="th";
+  n:"nuh",o:"aw",p:"puh",q:"kwuh",r:"er",s:"suh",t:"tuh",u:"uh",v:"vuh",w:"wuh",x:"ks",y:"yuh",z:"zuh",
+  sh:"shh",ch:"chuh",th:"the",wh:"wuh",ck:"kuh",ll:"luh",ss:"suh"};
+/* An English voice reads a made-up sound like "tuh" as a word ("two"), so only the sounds it says correctly
+   (real words or sounds it knows) use English. The rest use the Thai voice, which reads Thai spelling exactly. */
+const PH_EN_OK = {u:"uh",h:"huh",d:"duh",r:"er",v:"vuh",z:"zuh",sh:"shh",th:"the"};
+const phMode = () => ["mix","en","th"].includes(S.phMode) ? S.phMode : "mix";
 /* one sound as a play step, in the voice the parent picked */
-const phS = (g, elm, gap) => phTH() ? ["th",PH_SND[g]||g,elm,gap] : ["en",PH_EN[g]||g,elm,gap];
+/* the parent's own recordings of each sound (kept in this browser), used before any computer voice */
+const PH_REC_KEYS = "abcdefghijklmnopqrstuvwxyz".split("").concat(["sh","ch","th","wh"]);
+const PH_ALIAS = {ck:"k",ll:"l",ss:"s"};
+const REC = {}; var curAudio = null, recDB = null, recMR = null;
+const recKey = g => PH_ALIAS[g]||g;
+function recOpen(){ return recDB || (recDB = new Promise((ok,no)=>{ try{ const r=indexedDB.open("p1-sounds",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("s"); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }catch(e){ no(e); } })); }
+function recTx(fn){ return recOpen().then(db=>new Promise((ok,no)=>{ const t=db.transaction("s","readwrite"); fn(t.objectStore("s")); t.oncomplete=ok; t.onerror=()=>no(t.error); })); }
+function recLoad(){ return recOpen().then(db=>new Promise(ok=>{ const rq=db.transaction("s","readonly").objectStore("s").openCursor();
+  rq.onsuccess=()=>{ const c=rq.result; if(!c) return ok(); if(REC[c.key]) URL.revokeObjectURL(REC[c.key]); REC[c.key]=URL.createObjectURL(c.value); c.continue(); };
+  rq.onerror=()=>ok(); })).catch(()=>{}); }
+recLoad();
+function recPlay(url, done){
+  let fin=false; const end=()=>{ if(fin) return; fin=true; if(curAudio===a) curAudio=null; if(done) done(); };
+  if(curAudio){ try{ curAudio.pause(); }catch(e){} }
+  const a=new Audio(url); curAudio=a; a.onended=end; a.onerror=end; setTimeout(end,4000);
+  try{ const pr=a.play(); if(pr && pr.catch) pr.catch(end); }catch(e){ end(); }
+}
+/* cut the quiet before and after the sound, so blending (c · a · t) does not drag */
+async function recTrim(blob){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext, ac=new AC();
+    const ab=await blob.arrayBuffer(); const buf=await new Promise((ok,no)=>ac.decodeAudioData(ab,ok,no)); try{ ac.close(); }catch(e){}
+    const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++){ const v=Math.abs(d[i]); if(v>peak) peak=v; }
+    const th=Math.max(0.015,peak*0.08); let a=0,b=d.length-1;
+    while(a<d.length && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
+    if(b<=a) return blob;
+    a=Math.max(0,a-Math.round(sr*0.04)); b=Math.min(d.length,b+Math.round(sr*0.1));
+    const n=b-a, v=new DataView(new ArrayBuffer(44+n*2)), w=(o,t)=>{ for(let i=0;i<t.length;i++) v.setUint8(o+i,t.charCodeAt(i)); };
+    w(0,"RIFF"); v.setUint32(4,36+n*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,n*2,true);
+    for(let i=0;i<n;i++){ const x=Math.max(-1,Math.min(1,d[a+i])); v.setInt16(44+i*2, x<0?x*0x8000:x*0x7fff, true); }
+    return new Blob([v],{type:"audio/wav"});
+  }catch(e){ return blob; }
+}
+/* one sound as a play step: the parent's recording if there is one, otherwise the chosen voice */
+const phS = (g, elm, gap) => { const k=recKey(g), m=phMode();
+  if(REC[k]) return ["rec",REC[k],elm,gap];
+  const en = m==="en" || (m==="mix" && PH_EN_OK[k]) || !voiceTH;
+  return en ? ["en",PH_EN[k]||k,elm,gap] : ["th",PH_SND[k]||k,elm,gap]; };
 const phRep = (g, n, elm, gap) => Array.from({length:n},(_,i)=>phS(g, i===0?elm:null, i===n-1?gap:200));
 /* play a list of steps: [lang, text, element-to-light?, pause-ms?] — sounds and English words in one go */
 function phPlay(steps, done){
@@ -2388,7 +2441,7 @@ function phPlay(steps, done){
     if(i>=steps.length){ if(done) done(); return; }
     const [lang,text,elm,gap]=steps[i++]; if(elm) elm.classList.add("phon","lit");
     const go=()=>later(nx, gap==null?250:gap);
-    lang==="th" ? sayTH(text,go) : say(text,0.7,go); };
+    if(lang==="rec") recPlay(text,go); else if(lang==="th") sayTH(text,go); else say(text,0.7,go); };
   nx();
 }
 /* sound-by-sound then the whole word: เคอะ แอะ เทอะ … cat */
@@ -2422,8 +2475,8 @@ const DIW = Object.entries(PH_DI).flatMap(([d,o])=>o.w.map(([w,e])=>({d,w,e})));
 /* ---------- lessons ---------- */
 function phHead(t,sub){ screen({back:()=>hub("ph"),backLabel:"Phonics"}); app.append(el(`<div class="hubhead"><h2 class="outline">${t}</h2><p>${sub}</p></div>`)); }
 function phLetters(){
-  phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น บึ… ball");
-  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "เบอะ" · เกมใช้เสียงผู้พูดภาษาอังกฤษ (เปลี่ยนเป็นเสียงไทยได้ที่ ผู้ปกครอง → ภาษาอังกฤษ) · ตัวหนังสือไทยใต้ตัวอักษรเป็นคำอ่านโดยประมาณ ให้ผู้ปกครองช่วยออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
+  phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น เบอะ… ball");
+  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "เบอะ" · ตัวหนังสือไทยใต้ตัวอักษรเป็นคำอ่านโดยประมาณ ให้ผู้ปกครองช่วยออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
   const g=el(`<div class="grid phgrid"></div>`);
   Object.entries(PH_AZ).forEach(([l,ws])=>{
     const c=el(`<button class="card phc"><div class="phl wt">${l.toUpperCase()}${l}</div><div class="phs">เสียง /${PH_LBL[l]}/</div><div class="phe">${ws.map(([w,e])=>`<span>${e}</span>`).join("")}</div><div class="t">${ws.map(([w])=>w).join(" · ")}</div>${l==="x"?`<div class="t">x มักอยู่ท้ายคำ</div>`:""}</button>`);
@@ -3368,12 +3421,45 @@ function pEnglish(){
   lv.append(segGroup("enlevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],enLv(),v=>{S.enLevel=v;save();}));
   app.append(lv);
   const pv=el(`<div class="panel"><h3>🔤 เสียง Phonics</h3><p>เสียงตัวอักษร เช่น b c t ในบทเรียนและแบบฝึก Phonics<br>
-    <b>สำเนียงอังกฤษ:</b> ใช้เสียงอังกฤษ อ่านเป็น buh, kuh, tuh · <b>สำเนียงไทย:</b> ใช้เสียงไทย อ่านเป็น บึ, คึ, ทึ (เสียงไทยอ่าน เบอะ เป็น เบ-อะ จึงใช้แบบนี้แทน)<br>
-    ถ้าเครื่องไม่มีเสียงภาษาไทย ให้ใช้สำเนียงอังกฤษ</p>
+    <b>ผสม (แนะนำ):</b> แต่ละเสียงใช้เสียงที่อ่านได้ถูกที่สุด เสียงอังกฤษสำหรับ d h r u v z sh th และเสียงไทยสำหรับตัวที่เหลือ
+    (เสียงอังกฤษอ่านเสียงเดี่ยวอย่าง "tuh" ผิดเป็น "ทู" แต่เสียงไทยอ่าน ทึ แอะ ได้ตรงตัว)<br>
+    <b>อังกฤษล้วน / ไทยล้วน:</b> ใช้เสียงเดียวทั้งหมด · ถ้าเครื่องไม่มีเสียงภาษาไทย จะใช้เสียงอังกฤษเอง</p>
     <button class="chipbtn" style="margin-top:8px">🔊 ลองฟัง c · a · t → cat</button></div>`);
   pv.querySelector("button").onclick=()=>phPlay(phSteps("cat"));
-  pv.insertBefore(segGroup("phvoice",[["en","สำเนียงอังกฤษ"],["th","สำเนียงไทย"]],phTH()?"th":"en",v=>{S.phVoice=v;save();}), pv.querySelector("button"));
+  pv.insertBefore(segGroup("phmode",[["mix","ผสม (แนะนำ)"],["en","อังกฤษล้วน"],["th","ไทยล้วน"]],phMode(),v=>{S.phMode=v;save();}), pv.querySelector("button"));
   app.append(pv);
+  const rb=el(`<details class="panel"><summary><b>🎙️ อัดเสียง Phonics เอง (ไม่บังคับ)</b></summary><p>ถ้าอยากให้ลูกได้ยินเสียงพ่อแม่ อัดเฉพาะตัวที่ต้องการได้ ตัวที่อัดแล้วจะใช้เสียงนั้นแทนทุกที่<br>
+    กด 🎙️ แล้วพูดเสียง<b>สั้น ๆ ทันที</b> เช่น "เบอะ" (ไม่ใช่ "บี") แล้วกด ⏹️ (หยุดเองใน 3 วินาที) · ตัวที่อัดแล้วมี ✅<br>
+    เสียงเก็บไว้ในเครื่องนี้เท่านั้น ไม่รวมอยู่ในรหัสสำรองข้อมูล ถ้าใช้หลายเครื่องต้องอัดแยก</p><p class="recmsg"></p><div class="reclist"></div></details>`);
+  const msg=rb.querySelector(".recmsg"), list=rb.querySelector(".reclist");
+  PH_REC_KEYS.forEach(k=>{
+    const ex=PH_AZ[k] ? PH_AZ[k][0][0] : PH_DI[k].w[0][0];
+    const row=el(`<div class="recrow ${REC[k]?"has":""}"><b class="wt">${k}</b><span class="rl">/${PH_LBL[k]}/<small>${ex}</small></span><span class="ok">✅</span>
+      <button class="chipbtn rr" aria-label="อัด">🎙️</button><button class="chipbtn rp" aria-label="ฟัง">▶️</button><button class="chipbtn rd" aria-label="ลบ">🗑️</button></div>`);
+    const btn=row.querySelector(".rr");
+    btn.onclick=async()=>{
+      if(recMR){ if(recMR.state==="recording") recMR.stop(); return; }
+      hush(); msg.textContent="";
+      if(!navigator.mediaDevices || !window.MediaRecorder){ msg.textContent="เบราว์เซอร์นี้อัดเสียงไม่ได้ ลองเปิดด้วย Safari (iPhone) หรือ Chrome/Edge"; return; }
+      let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+      catch(e){ msg.textContent="เปิดไมค์ไม่ได้ ให้กดอนุญาตไมโครโฟนให้เว็บนี้ แล้วลองใหม่"; return; }
+      const chunks=[], mr=new MediaRecorder(stream); recMR=mr;
+      mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop=async()=>{
+        stream.getTracks().forEach(t=>t.stop()); recMR=null; btn.textContent="🎙️"; row.classList.remove("on");
+        if(!chunks.length) return;
+        const blob=await recTrim(new Blob(chunks,{type:chunks[0].type||mr.mimeType||"audio/webm"}));
+        try{ await recTx(st=>st.put(blob,k)); }catch(e){ msg.textContent="บันทึกเสียงไม่ได้ (พื้นที่เครื่องเต็ม หรืออยู่ในโหมดส่วนตัว)"; return; }
+        if(REC[k]) URL.revokeObjectURL(REC[k]); REC[k]=URL.createObjectURL(blob); row.classList.add("has"); recPlay(REC[k]);
+      };
+      mr.start(); btn.textContent="⏹️"; row.classList.add("on");
+      setTimeout(()=>{ if(mr.state==="recording") mr.stop(); },3000);
+    };
+    row.querySelector(".rp").onclick=()=>{ hush(); phPlay([phS(k)]); };
+    row.querySelector(".rd").onclick=()=>{ if(!REC[k]) return; recTx(st=>st.delete(k)).catch(()=>{}); URL.revokeObjectURL(REC[k]); delete REC[k]; row.classList.remove("has"); };
+    list.append(row);
+  });
+  app.append(rb);
 
   const add=el(`<div class="panel"><h3>➕ เพิ่มคำศัพท์เอง</h3><p>ใส่คำภาษาอังกฤษ ความหมาย และรูปอีโมจิ (กดปุ่มอีโมจิบนแป้นพิมพ์มือถือแล้วเลือกรูป)</p>
     <form class="row" style="align-items:flex-end">
