@@ -2361,9 +2361,11 @@ const PH_AZ = {
   y:[["yarn","🧶"],["yacht","⛵"],["yes","✔️"]], z:[["zebra","🦓"],["zero","0️⃣"],["zip","🤐"]]
 };
 /* the SOUND of each letter written in Thai, spoken with the Thai voice (an English voice can only say letter names) */
-const PH_SND = {a:"แอะ",b:"เบอะ",c:"เคอะ",d:"เดอะ",e:"เอะ",f:"ฟึ",g:"เกอะ",h:"เฮอะ",i:"อิ",j:"เจอะ",k:"เคอะ",l:"เลอะ",m:"อึม",
-  n:"อึน",o:"เอาะ",p:"เพอะ",q:"เควอะ",r:"เรอะ",s:"ซึ",t:"เทอะ",u:"อะ",v:"เวอะ",w:"วะ",x:"เคอะซึ",y:"เยอะ",z:"ซึ",
-  sh:"ชึ",ch:"เชอะ",th:"ธึ",wh:"วะ",ck:"เคอะ",ll:"เลอะ",ss:"ซึ"};
+/* written with the short vowel อึ (บึ, คึ, ดึ): Thai voices read these as one short sound.
+   Spellings like "เคอะ" get split into "เค-อะ" by some voices, so they are avoided. */
+const PH_SND = {a:"แอะ",b:"บึ",c:"คึ",d:"ดึ",e:"เอะ",f:"ฟึ",g:"กึ",h:"ฮึ",i:"อิ",j:"จึ",k:"คึ",l:"ลึ",m:"อึม",
+  n:"อึน",o:"เอาะ",p:"พึ",q:"ควึ",r:"รึ",s:"ซึ",t:"ทึ",u:"อะ",v:"วึ",w:"วึ",x:"คึซึ",y:"ยึ",z:"ซึ",
+  sh:"ชู่ว",ch:"ชึ",th:"ธึ",wh:"วึ",ck:"คึ",ll:"ลึ",ss:"ซึ"};
 /* split a short word into its sounds: two-letter sounds stay together (sh, ch, th, wh, ck, ll, ss) */
 function phSplit(w){ const out=[]; for(let i=0;i<w.length;){ const two=w.slice(i,i+2); if(i+1<w.length && PH_SND[two] && two.length===2){ out.push(two); i+=2; } else { out.push(w[i]); i++; } } return out; }
 /* play a list of steps: [lang, text, element-to-light?, pause-ms?] — Thai sounds and English words in one go */
@@ -2407,8 +2409,8 @@ const DIW = Object.entries(PH_DI).flatMap(([d,o])=>o.w.map(([w,e])=>({d,w,e})));
 /* ---------- lessons ---------- */
 function phHead(t,sub){ screen({back:()=>hub("ph"),backLabel:"Phonics"}); app.append(el(`<div class="hubhead"><h2 class="outline">${t}</h2><p>${sub}</p></div>`)); }
 function phLetters(){
-  phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น เบอะ… ball");
-  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "เบอะ" · เสียงในเกมเขียนเป็นภาษาไทยให้ใกล้เคียง ออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
+  phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น บึ… ball");
+  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "บึ" · เสียงในเกมเขียนเป็นภาษาไทยให้ใกล้เคียง ออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
   const g=el(`<div class="grid phgrid"></div>`);
   Object.entries(PH_AZ).forEach(([l,ws])=>{
     const c=el(`<button class="card phc"><div class="phl wt">${l.toUpperCase()}${l}</div><div class="phs">เสียง /${PH_SND[l]}/</div><div class="phe">${ws.map(([w,e])=>`<span>${e}</span>`).join("")}</div><div class="t">${ws.map(([w])=>w).join(" · ")}</div>${l==="x"?`<div class="t">x มักอยู่ท้ายคำ</div>`:""}</button>`);
@@ -2429,7 +2431,7 @@ function phBlendCard(x, mid){
   return c;
 }
 function phVowels(){
-  phHead("🐱 สระเสียงสั้น a e i o u","แตะคำ ฟังเสียงทีละตัว แล้วอ่านรวมเป็นคำ เช่น เคอะ · แอะ · เทอะ → cat · ตัวสีแดงคือสระ");
+  phHead("🐱 สระเสียงสั้น a e i o u","แตะคำ ฟังเสียงทีละตัว แล้วอ่านรวมเป็นคำ เช่น คึ · แอะ · ทึ → cat · ตัวสีแดงคือสระ");
   Object.entries(PH_CVC).forEach(([v,ws])=>{
     const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${v}</button><span class="mlet">เสียง /${PH_SND[v]}/</span></div><div class="grid"></div></div>`);
     sec.querySelector(".mname").onclick=()=>phPlay([["th",PH_SND[v]+" "+PH_SND[v]+" "+PH_SND[v]]]);
