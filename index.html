@@ -2368,7 +2368,20 @@ const PH_SND = {a:"แอะ",b:"บึ",c:"คึ",d:"ดึ",e:"เอะ",f:"
   sh:"ชู่ว",ch:"ชึ",th:"ธึ",wh:"วึ",ck:"คึ",ll:"ลึ",ss:"ซึ"};
 /* split a short word into its sounds: two-letter sounds stay together (sh, ch, th, wh, ck, ll, ss) */
 function phSplit(w){ const out=[]; for(let i=0;i<w.length;){ const two=w.slice(i,i+2); if(i+1<w.length && PH_SND[two] && two.length===2){ out.push(two); i+=2; } else { out.push(w[i]); i++; } } return out; }
-/* play a list of steps: [lang, text, element-to-light?, pause-ms?] — Thai sounds and English words in one go */
+/* the same sounds for an English voice (default), so they are not said with a Thai accent */
+/* how each sound is written on screen for parents (เบอะ เทอะ). The Thai voice reads these badly (เบ-อะ),
+   so it speaks PH_SND instead */
+const PH_LBL = {a:"แอะ",b:"เบอะ",c:"เคอะ",d:"เดอะ",e:"เอะ",f:"เฟอะ",g:"เกอะ",h:"เฮอะ",i:"อิ",j:"เจอะ",k:"เคอะ",l:"เลอะ",m:"อึม",
+  n:"อึน",o:"เอาะ",p:"เพอะ",q:"เควอะ",r:"เรอะ",s:"ซึ",t:"เทอะ",u:"อะ",v:"เวอะ",w:"เวอะ",x:"คซ",y:"เยอะ",z:"ซึ",
+  sh:"ชู่ว",ch:"เชอะ",th:"เธอะ",wh:"เวอะ",ck:"เคอะ",ll:"เลอะ",ss:"ซึ"};
+const PH_EN = {a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fuh",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"luh",m:"muh",
+  n:"nuh",o:"aw",p:"puh",q:"kwuh",r:"ruh",s:"suh",t:"tuh",u:"uh",v:"vuh",w:"wuh",x:"ks",y:"yuh",z:"zuh",
+  sh:"shh",ch:"chuh",th:"thuh",wh:"wuh",ck:"kuh",ll:"luh",ss:"suh"};
+const phTH = () => S.phVoice==="th";
+/* one sound as a play step, in the voice the parent picked */
+const phS = (g, elm, gap) => phTH() ? ["th",PH_SND[g]||g,elm,gap] : ["en",PH_EN[g]||g,elm,gap];
+const phRep = (g, n, elm, gap) => Array.from({length:n},(_,i)=>phS(g, i===0?elm:null, i===n-1?gap:200));
+/* play a list of steps: [lang, text, element-to-light?, pause-ms?] — sounds and English words in one go */
 function phPlay(steps, done){
   hush(); const tok=TOKEN; let i=0;
   const nx=()=>{ if(tok!==TOKEN) return; document.querySelectorAll(".phon").forEach(e=>e.classList.remove("phon"));
@@ -2379,7 +2392,7 @@ function phPlay(steps, done){
   nx();
 }
 /* sound-by-sound then the whole word: เคอะ แอะ เทอะ … cat */
-const phSteps = (w, els=[]) => phSplit(w).map((g,i)=>["th",PH_SND[g]||g,els[i],180]).concat([["en",w,null,300]]);
+const phSteps = (w, els=[]) => phSplit(w).map((g,i)=>phS(g,els[i],180)).concat([["en",w,null,300]]);
 /* letters that make the same first sound must never be each other's wrong answer */
 const PH_SAME = ["ck","cq","kq"];
 const phClash = (a,b) => PH_SAME.includes([a,b].sort().join(""));
@@ -2410,14 +2423,14 @@ const DIW = Object.entries(PH_DI).flatMap(([d,o])=>o.w.map(([w,e])=>({d,w,e})));
 function phHead(t,sub){ screen({back:()=>hub("ph"),backLabel:"Phonics"}); app.append(el(`<div class="hubhead"><h2 class="outline">${t}</h2><p>${sub}</p></div>`)); }
 function phLetters(){
   phHead("🔤 เสียงตัวอักษร A–Z","แตะการ์ดเพื่อฟังเสียงของตัวอักษร แล้วตามด้วยคำ เช่น บึ… ball");
-  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "บึ" · เสียงในเกมเขียนเป็นภาษาไทยให้ใกล้เคียง ออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
+  app.append(el(`<div class="tip phtip">💡 สำหรับผู้ปกครอง: phonics สอน<b>เสียง</b>ของตัวอักษร ไม่ใช่ชื่อ เช่น b ชื่อ "บี" แต่ออกเสียง "เบอะ" · เกมใช้เสียงผู้พูดภาษาอังกฤษ (เปลี่ยนเป็นเสียงไทยได้ที่ ผู้ปกครอง → ภาษาอังกฤษ) · ตัวหนังสือไทยใต้ตัวอักษรเป็นคำอ่านโดยประมาณ ให้ผู้ปกครองช่วยออกเสียงสั้น ๆ เบา ๆ ไม่ลากยาว</div>`));
   const g=el(`<div class="grid phgrid"></div>`);
   Object.entries(PH_AZ).forEach(([l,ws])=>{
-    const c=el(`<button class="card phc"><div class="phl wt">${l.toUpperCase()}${l}</div><div class="phs">เสียง /${PH_SND[l]}/</div><div class="phe">${ws.map(([w,e])=>`<span>${e}</span>`).join("")}</div><div class="t">${ws.map(([w])=>w).join(" · ")}</div>${l==="x"?`<div class="t">x มักอยู่ท้ายคำ</div>`:""}</button>`);
+    const c=el(`<button class="card phc"><div class="phl wt">${l.toUpperCase()}${l}</div><div class="phs">เสียง /${PH_LBL[l]}/</div><div class="phe">${ws.map(([w,e])=>`<span>${e}</span>`).join("")}</div><div class="t">${ws.map(([w])=>w).join(" · ")}</div>${l==="x"?`<div class="t">x มักอยู่ท้ายคำ</div>`:""}</button>`);
     /* "เบอะ เบอะ … เบอะ ball … เบอะ bee …" */
     c.onclick=()=>{ const sp=[...c.querySelectorAll(".phe span")], snd=PH_SND[l];
-      const steps=[["th",snd+" "+snd,c.querySelector(".phs"),400]];
-      ws.forEach(([w],i)=>{ if(l!=="x") steps.push(["th",snd,sp[i],120]); steps.push(["en",w,sp[i],450]); });
+      const steps=phRep(l,2,c.querySelector(".phs"),400);
+      ws.forEach(([w],i)=>{ if(l!=="x") steps.push(phS(l,sp[i],120)); steps.push(["en",w,sp[i],450]); });
       phPlay(steps); };
     g.append(c);
   });
@@ -2426,15 +2439,15 @@ function phLetters(){
 /* blend: light each letter, then say the whole word (no letter names, so the sounds are not mixed up with A-B-C) */
 function phBlendCard(x, mid){
   const parts=phSplit(x.w);
-  const c=el(`<button class="card"><div class="e">${pic(x.e)}</div><div class="w phw">${parts.map((g,i)=>`<span class="${mid!=null&&i===mid?"vw":""}">${esc(g)}</span>`).join("")}</div><div class="phs">${parts.map(g=>PH_SND[g]||g).join(" · ")}</div></button>`);
+  const c=el(`<button class="card"><div class="e">${pic(x.e)}</div><div class="w phw">${parts.map((g,i)=>`<span class="${mid!=null&&i===mid?"vw":""}">${esc(g)}</span>`).join("")}</div><div class="phs">${parts.map(g=>PH_LBL[g]||g).join(" · ")}</div></button>`);
   c.onclick=()=>{ const sp=[...c.querySelectorAll(".phw span")]; sp.forEach(s=>s.classList.remove("lit")); phPlay(phSteps(x.w,sp),()=>sp.forEach(s=>s.classList.add("lit"))); };
   return c;
 }
 function phVowels(){
-  phHead("🐱 สระเสียงสั้น a e i o u","แตะคำ ฟังเสียงทีละตัว แล้วอ่านรวมเป็นคำ เช่น คึ · แอะ · ทึ → cat · ตัวสีแดงคือสระ");
+  phHead("🐱 สระเสียงสั้น a e i o u","แตะคำ ฟังเสียงทีละตัว แล้วอ่านรวมเป็นคำ เช่น เคอะ · แอะ · เทอะ → cat · ตัวสีแดงคือสระ");
   Object.entries(PH_CVC).forEach(([v,ws])=>{
-    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${v}</button><span class="mlet">เสียง /${PH_SND[v]}/</span></div><div class="grid"></div></div>`);
-    sec.querySelector(".mname").onclick=()=>phPlay([["th",PH_SND[v]+" "+PH_SND[v]+" "+PH_SND[v]]]);
+    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${v}</button><span class="mlet">เสียง /${PH_LBL[v]}/</span></div><div class="grid"></div></div>`);
+    sec.querySelector(".mname").onclick=()=>phPlay(phRep(v,3));
     ws.forEach(([w,e])=>sec.querySelector(".grid").append(phBlendCard({w,e},1)));
     app.append(sec);
   });
@@ -2444,7 +2457,7 @@ function phFamilies(){
   Object.entries(PH_FAM).forEach(([f,ws])=>{
     const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 -${f}</button><span class="mlet">${ws.map(x=>x.w).join(" · ")}</span></div><div class="grid"></div></div>`);
     /* the family ending first (แอะ เทอะ → at), then every word */
-    sec.querySelector(".mname").onclick=()=>phPlay(phSplit(f).map(g=>["th",PH_SND[g],null,150]).concat([["en",f,null,500]],ws.map(x=>["en",x.w,null,350])));
+    sec.querySelector(".mname").onclick=()=>phPlay(phSplit(f).map(g=>phS(g,null,150)).concat([["en",f,null,500]],ws.map(x=>["en",x.w,null,350])));
     ws.forEach(x=>sec.querySelector(".grid").append(phBlendCard(x)));
     app.append(sec);
   });
@@ -2452,11 +2465,11 @@ function phFamilies(){
 function phDigraphs(){
   phHead("🚢 สองตัว เสียงเดียว","sh ch th wh · สองตัวอักษรรวมกันออกเสียงใหม่ 1 เสียง");
   Object.entries(PH_DI).forEach(([d,o])=>{
-    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${d}</button><span class="mlet">เสียง /${PH_SND[d]}/ · ${o.say}</span></div><div class="grid"></div></div>`);
-    sec.querySelector(".mname").onclick=()=>phPlay([["th",PH_SND[d]+" "+PH_SND[d]]]);
+    const sec=el(`<div class="panel matsec"><div class="mathead"><button class="chipbtn mname wt">🔊 ${d}</button><span class="mlet">เสียง /${PH_LBL[d]}/ · ${o.say}</span></div><div class="grid"></div></div>`);
+    sec.querySelector(".mname").onclick=()=>phPlay(phRep(d,2));
     o.w.forEach(([w,e])=>{
       const c=el(`<button class="card"><div class="e">${pic(e)}</div><div class="w phw wt"><span class="vw">${d}</span>${esc(w.slice(2))}</div></button>`);
-      c.onclick=()=>phPlay([["th",PH_SND[d],c.querySelector(".vw"),150],["en",w,null,300]]); sec.querySelector(".grid").append(c);
+      c.onclick=()=>phPlay([phS(d,c.querySelector(".vw"),150),["en",w,null,300]]); sec.querySelector(".grid").append(c);
     });
     app.append(sec);
   });
@@ -2472,8 +2485,8 @@ const PH_ACTS = {
       const x=pick1(PH_START), abc="abcdefghijklmnopqrstuvwyz".split("").filter(l=>l!==x.l && !phClash(l,x.l));
       return {key:"ps"+x.w,lang:"th",q:"คำนี้ ขึ้นต้นด้วยเสียงตัวไหน ?",stage:`<div class="picture pop">${pic(x.e)}</div>`,
         auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle([x.l,...shuffle(abc).slice(0,3)]).map(l=>({ok:l===x.l,html:`<span class="outline wt">${l}</span><span class="tx sm phopt">/${PH_SND[l]}/</span>`,sayTH:PH_SND[l]})),
-        reveal:{...phReveal(x,`ขึ้นต้นด้วยตัว ${x.l} เสียง /${PH_SND[x.l]}/`),play:[["th",PH_SND[x.l]],["en",x.w]]}};
+        opts:shuffle([x.l,...shuffle(abc).slice(0,3)]).map(l=>({ok:l===x.l,html:`<span class="outline wt">${l}</span><span class="tx sm phopt">/${PH_LBL[l]}/</span>`,snd:l})),
+        reveal:{...phReveal(x,`ขึ้นต้นด้วยตัว ${x.l} เสียง /${PH_LBL[x.l]}/`),play:[phS(x.l),["en",x.w]]}};
     }},
   ph_same:{sub:"ph",icon:"👂",th:"เสียงแรกเหมือนกัน",ds:"รูปไหนขึ้นต้นด้วยเสียงเดียวกัน",
     gen:()=>{
@@ -2483,7 +2496,7 @@ const PH_ACTS = {
         stage:`<div class="picture sm pop">${pic(x.e)}</div><div class="bigword wt" style="font-family:var(--display)">${esc(x.w)}</div>`,
         auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"pics",
         opts:shuffle([mate,...others]).map(o=>({ok:o===mate,...phOptPic(o)})),
-        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> กับ <b class="wt">${esc(mate.w)}</b> ขึ้นต้นด้วยเสียง /${PH_SND[x.l]}/ เหมือนกัน`,play:[["th",PH_SND[x.l]],["en",x.w],["th",PH_SND[x.l]],["en",mate.w]]}};
+        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> กับ <b class="wt">${esc(mate.w)}</b> ขึ้นต้นด้วยเสียง /${PH_LBL[x.l]}/ เหมือนกัน`,play:[phS(x.l),["en",x.w],phS(x.l),["en",mate.w]]}};
     }},
   ph_vowel:{sub:"ph",icon:"🔡",th:"สระที่หายไป",ds:"c _ t เติมสระ a e i o u",
     gen:()=>{
@@ -2491,8 +2504,8 @@ const PH_ACTS = {
       return {key:"pv"+x.w,lang:"th",q:"สระที่หายไป คือตัวไหน ?",
         stage:`<div class="picture sm pop">${pic(x.e)}</div><div class="blankword"><span class="wt">${x.w[0]}</span><span class="blank">?</span><span class="wt">${x.w[2]}</span></div>`,
         auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle([x.v,...ds]).map(v=>({ok:v===x.v,html:`<span class="outline wt">${v}</span><span class="tx sm phopt">/${PH_SND[v]}/</span>`,sayTH:PH_SND[v]})),
-        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_SND[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
+        opts:shuffle([x.v,...ds]).map(v=>({ok:v===x.v,html:`<span class="outline wt">${v}</span><span class="tx sm phopt">/${PH_LBL[v]}/</span>`,snd:v})),
+        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_LBL[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
     }},
   ph_blend:{sub:"ph",icon:"🧩",th:"อ่านคำเอง",ds:"ผสมเสียงทีละตัว แล้วเลือกรูป",
     gen:()=>{
@@ -2504,7 +2517,7 @@ const PH_ACTS = {
         stage:`<div class="letters" style="--n:3">${x.w.split("").map(ch=>`<b class="wt lit">${ch}</b>`).join("")}</div><div class="hint">ผสมเสียงทีละตัว แล้วอ่านรวมเป็นคำ</div>`,
         listen:()=>sayTH("ผสมเสียงทีละตัว แล้วอ่านรวมเป็นคำนะ"),layout:"pics",
         opts:shuffle([x,...ds]).map(o=>({ok:o===x,...phOptPic(o)})),
-        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_SND[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
+        reveal:{...phReveal(x,`${phSplit(x.w).map(g=>PH_LBL[g]).join(" · ")} → ${x.w}`),play:phSteps(x.w)}};
     }},
   ph_rhyme:{sub:"ph",icon:"🎵",th:"คำคล้องจอง",ds:"cat – hat ลงท้ายเหมือนกัน",
     gen:()=>{
@@ -2515,15 +2528,15 @@ const PH_ACTS = {
         stage:`${hard?"":`<div class="picture sm pop">${pic(x.e)}</div>`}<div class="bigword wt" style="font-family:var(--display)">${esc(x.w)}</div><div class="hint">คล้องจอง = ลงท้ายเหมือนกัน</div>`,
         auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",optCls:"storyopts",
         opts:shuffle([mate,...ds]).map(o=>({ok:o===mate,html:`${hard?"":`<span class="oe">${pic(o.e)}</span>`}<span class="outline wt">${esc(o.w)}</span>`,say:o.w})),
-        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> – <b class="wt">${esc(mate.w)}</b> ลงท้ายด้วย -${f} เหมือนกัน`,play:[["en",x.w],["en",mate.w],...phSplit(f).map(g=>["th",PH_SND[g]]),["en",f]]}};
+        reveal:{big:`${pic(x.e)}${pic(mate.e)}`,text:`<b class="wt">${esc(x.w)}</b> – <b class="wt">${esc(mate.w)}</b> ลงท้ายด้วย -${f} เหมือนกัน`,play:[["en",x.w],["en",mate.w],...phSplit(f).map(g=>phS(g)),["en",f]]}};
     }},
   ph_di:{sub:"ph",icon:"🚢",th:"sh ch th wh",ds:"คำนี้ขึ้นต้นด้วยเสียงไหน",
     gen:()=>{
       const x=pick1(DIW);
       return {key:"pd"+x.w,lang:"th",q:"คำนี้ ขึ้นต้นด้วยอะไร ?",stage:`<div class="picture pop">${pic(x.e)}</div>`,
         auto:phSpeak(x.w),listen:phSpeak(x.w),layout:"words",
-        opts:shuffle(Object.keys(PH_DI)).map(d=>({ok:d===x.d,html:`<span class="outline wt">${d}</span><span class="tx sm phopt">/${PH_SND[d]}/</span>`,sayTH:PH_SND[d]})),
-        reveal:{...phReveal(x,`ขึ้นต้นด้วย ${x.d} เสียง /${PH_SND[x.d]}/`),play:[["th",PH_SND[x.d]],["en",x.w]]}};
+        opts:shuffle(Object.keys(PH_DI)).map(d=>({ok:d===x.d,html:`<span class="outline wt">${d}</span><span class="tx sm phopt">/${PH_LBL[d]}/</span>`,snd:d})),
+        reveal:{...phReveal(x,`ขึ้นต้นด้วย ${x.d} เสียง /${PH_LBL[x.d]}/`),play:[phS(x.d),["en",x.w]]}};
     }},
   /* the test: a mix of every practice type */
   ph_test:{sub:"ph",icon:"📝",th:"แบบทดสอบ Phonics",ds:"รวมทุกแบบฝึก วัดผลว่าเข้าใจแค่ไหน",
@@ -2589,6 +2602,7 @@ function answer(btn,o){
   hush();
   if(!o.ok){
     G.tries++; btn.classList.add("wrong");
+    if(o.snd){ phPlay([phS(o.snd)],()=>sayTH("ลองใหม่นะ")); return; }
     if(G.q.lang==="en") o.say ? say(o.say,0.8,()=>say("Try again!",0.9)) : say("Try again!",0.9);
     else if(G.q.multi) sayTH("ไม่มีเงานี้ ลองใหม่นะ");
     else o.sayTH ? sayTH(o.sayTH,()=>sayTH("ลองใหม่นะ")) : sayTH("ลองใหม่นะ");
@@ -3353,6 +3367,13 @@ function pEnglish(){
     <b>ยาก:</b> ตาราง 8×8 หา 8 คำ มีแนวทแยง และเห็นแค่รูป ต้องจำตัวสะกดเอง (แตะรูปเพื่อแอบดูคำได้)</p></div>`);
   lv.append(segGroup("enlevel",[["easy","ง่าย"],["normal","ปกติ"],["hard","ยาก"]],enLv(),v=>{S.enLevel=v;save();}));
   app.append(lv);
+  const pv=el(`<div class="panel"><h3>🔤 เสียง Phonics</h3><p>เสียงตัวอักษร เช่น b c t ในบทเรียนและแบบฝึก Phonics<br>
+    <b>สำเนียงอังกฤษ:</b> ใช้เสียงอังกฤษ อ่านเป็น buh, kuh, tuh · <b>สำเนียงไทย:</b> ใช้เสียงไทย อ่านเป็น บึ, คึ, ทึ (เสียงไทยอ่าน เบอะ เป็น เบ-อะ จึงใช้แบบนี้แทน)<br>
+    ถ้าเครื่องไม่มีเสียงภาษาไทย ให้ใช้สำเนียงอังกฤษ</p>
+    <button class="chipbtn" style="margin-top:8px">🔊 ลองฟัง c · a · t → cat</button></div>`);
+  pv.querySelector("button").onclick=()=>phPlay(phSteps("cat"));
+  pv.insertBefore(segGroup("phvoice",[["en","สำเนียงอังกฤษ"],["th","สำเนียงไทย"]],phTH()?"th":"en",v=>{S.phVoice=v;save();}), pv.querySelector("button"));
+  app.append(pv);
 
   const add=el(`<div class="panel"><h3>➕ เพิ่มคำศัพท์เอง</h3><p>ใส่คำภาษาอังกฤษ ความหมาย และรูปอีโมจิ (กดปุ่มอีโมจิบนแป้นพิมพ์มือถือแล้วเลือกรูป)</p>
     <form class="row" style="align-items:flex-end">
@@ -3497,5 +3518,4 @@ try{ if("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !
 
 home();
 </script>
-
 </html>
