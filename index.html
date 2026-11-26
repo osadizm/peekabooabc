@@ -1299,7 +1299,7 @@ function voiceScore(v, th){
   if(/premium|enhanced|natural|neural/.test(n)) s+=6;
   if(/online/.test(n)) s+=3;
   if(/google/.test(n)) s+=3;
-  if(th){ if(/narisa|kanya|premwadee|achara/.test(n)) s+=2; }
+  if(th){ if(/narisa|kanya|premwadee|niwat|achara/.test(n)) s+=2; }
   else{
     if(/en[-_]us/i.test(v.lang)) s+=2; else if(/en[-_](gb|au)/i.test(v.lang)) s+=1;
     if(/ava|samantha|allison|susan|aria|jenny|zoe|nicky|female/.test(n)) s+=1;
@@ -1310,9 +1310,12 @@ function voiceScore(v, th){
 const enVoices = vs => vs.filter(v=>/^en/i.test(v.lang)).sort((a,b)=>voiceScore(b,false)-voiceScore(a,false));
 const thVoices = vs => vs.filter(v=>/^th/i.test(v.lang)).sort((a,b)=>voiceScore(b,true)-voiceScore(a,true));
 const speed = () => [0.8,1,1.15].includes(+S.speed) ? +S.speed : 1;
-/* online voices (Windows "… Online (Natural)") sound best but drop words or go silent on a slow or blocked
-   connection. If one fails or never starts, this device switches to voices installed on the computer. */
-let AVOID_ONLINE=false; try{ AVOID_ONLINE = localStorage.getItem("kv-offline-voice")==="1"; }catch(e){}
+/* natural online voices (Edge "… Online (Natural)") sound best, so they are used by default. If one fails or
+   never starts (slow or no internet), the game switches to voices installed on the computer until the page
+   is opened again. Only the parent's own choice "installed voices only" is remembered. */
+let AVOID_ONLINE=false; try{ AVOID_ONLINE = localStorage.getItem("kv-voice-mode")==="local"; }catch(e){}
+/* once: forget voices picked by hand before natural voices became the default */
+try{ if(S.voiceV!==2){ delete S.voiceEN; delete S.voiceTH; S.voiceV=2; localStorage.setItem(KEY, JSON.stringify(S)); } }catch(e){}
 const isOnline = v => !!v && (v.localService===false || /online/i.test(v.name));
 function pickVoice(){
   try{
@@ -1325,7 +1328,6 @@ function pickVoice(){
 }
 function dropOnline(){
   if(AVOID_ONLINE) return; AVOID_ONLINE=true;
-  try{ localStorage.setItem("kv-offline-voice","1"); }catch(e){}
   pickVoice();
 }
 try{ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }catch(e){}
@@ -3247,9 +3249,12 @@ function pVoice(){
   };
   const st=el(`<div class="panel"><h3>สถานะเสียงในเครื่องนี้</h3>
     <p>เสียงภาษาอังกฤษ: <b>${enVoices(vs).length} เสียง</b> · เสียงภาษาไทย: <b>${thVoices(vs).length ? thVoices(vs).length+" เสียง" : "ไม่มี (ประโยคภาษาไทยจะไม่มีเสียง)"}</b></p>
-    <p>ถ้าเสียงขาดเป็นช่วง ๆ ให้ใช้เฉพาะเสียงที่ติดตั้งในเครื่อง (เสียงแบบ Online ต้องใช้อินเทอร์เน็ตและอาจสะดุด)</p></div>`);
-  st.append(segGroup("offv",[["auto","เลือกให้อัตโนมัติ"],["local","ใช้เสียงในเครื่องเท่านั้น"]],AVOID_ONLINE?"local":"auto",v=>{
-    AVOID_ONLINE = v==="local"; try{ localStorage.setItem("kv-offline-voice",AVOID_ONLINE?"1":"0"); }catch(e){} pickVoice(); parent("voice"); }));
+    <p>เสียงธรรมชาติ (Natural) ในเครื่องนี้: <b>${vs.filter(v=>/natural|neural/i.test(v.name)).length ? vs.filter(v=>/natural|neural/i.test(v.name)&&/^(en|th)/i.test(v.lang)).length+" เสียง" : "ไม่มี"}</b>
+    ${/Windows/i.test(navigator.userAgent) && !/Edg\//.test(navigator.userAgent) && !vs.some(v=>/natural|neural/i.test(v.name)) ? `<br><b style="color:#dc2626">เปิดเว็บนี้ด้วย Microsoft Edge จะได้เสียงธรรมชาติภาษาไทยและอังกฤษ (ฟรี)</b>` : ""}</p>
+    <p><b>เสียงธรรมชาติ:</b> ฟังเหมือนคนพูด ต้องใช้อินเทอร์เน็ต ถ้าเน็ตช้าจนเสียงไม่ออก เกมจะสลับไปใช้เสียงในเครื่องให้เองชั่วคราว<br>
+    <b>เสียงในเครื่องเท่านั้น:</b> ใช้ได้แม้ไม่มีเน็ต แต่ฟังเป็นเสียงหุ่นยนต์มากกว่า เลือกข้อนี้ถ้าเสียงขาดเป็นช่วง ๆ บ่อย</p></div>`);
+  st.append(segGroup("offv",[["auto","เสียงธรรมชาติ (แนะนำ)"],["local","เสียงในเครื่องเท่านั้น"]],AVOID_ONLINE?"local":"auto",v=>{
+    AVOID_ONLINE = v==="local"; try{ localStorage.setItem("kv-voice-mode",AVOID_ONLINE?"local":"auto"); }catch(e){} pickVoice(); parent("voice"); }));
   app.append(st);
   app.append(block("เสียงภาษาอังกฤษ", enVoices(vs), voiceEN, "voiceEN", "Apple. A, P, P, L, E. Apple!", t=>say(t,0.8)));
   app.append(block("เสียงภาษาไทย", thVoices(vs), voiceTH, "voiceTH", "กอ ไก่ ขอ ไข่ หนึ่ง บวก สอง เท่ากับ สาม", t=>sayTH(t)));
