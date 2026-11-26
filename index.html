@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="พร้อมเข้า ป.1">
@@ -40,6 +40,8 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:110px;z-ind
              radial-gradient(ellipse 40% 60% at 50% 100%,var(--hill-2) 97%,transparent 100%)}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button,.chip{touch-action:manipulation}
+/* no pinch or double-tap zoom (children on touch screens kept zooming the page) */
+html,body{touch-action:pan-x pan-y}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid var(--sky);outline-offset:3px}
 .wrap{max-width:1100px;margin:0 auto;padding-block:18px 28px}
 .outline{color:var(--white);text-shadow:
@@ -1353,11 +1355,24 @@ function pickVoice(){
     voiceTH = th.find(v=>v.name===S.voiceTH && ok(v)) || th.find(ok) || th[0] || null;
   }catch(e){}
 }
+/* one hiccup is not enough to give up on the natural voice: switch only after 2 failures in a row,
+   and try the natural voice again 2 minutes later (unless the parent chose installed voices only) */
+let onlineFails=0, dropTimer=null;
 function dropOnline(){
-  if(AVOID_ONLINE) return; AVOID_ONLINE=true;
-  pickVoice();
+  if(AVOID_ONLINE) return;
+  if(++onlineFails < 2) return;
+  AVOID_ONLINE=true; pickVoice();
+  toast("เน็ตช้า ใช้เสียงในเครื่องชั่วคราว<br>อีก 2 นาทีจะกลับไปใช้เสียงที่เลือกไว้");
+  clearTimeout(dropTimer);
+  dropTimer=setTimeout(()=>{ let local=false; try{ local=localStorage.getItem("kv-voice-mode")==="local"; }catch(e){}
+    if(!local){ AVOID_ONLINE=false; onlineFails=0; pickVoice(); } }, 120000);
 }
 try{ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }catch(e){}
+/* block zoom: Ctrl + mouse wheel / touchpad pinch, Ctrl + plus / minus, and Safari's pinch gesture */
+addEventListener("wheel", e=>{ if(e.ctrlKey) e.preventDefault(); }, {passive:false});
+addEventListener("keydown", e=>{ if((e.ctrlKey||e.metaKey) && ["+","=","-","_","0"].includes(e.key)) e.preventDefault(); });
+["gesturestart","gesturechange"].forEach(t=>addEventListener(t, e=>e.preventDefault(), {passive:false}));
+addEventListener("touchmove", e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); }, {passive:false});
 /* desktop Chrome/Edge stop a long sentence after about 15 seconds; nudging the engine keeps it talking */
 const DESKTOP = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||"");
 setInterval(()=>{ try{ if(DESKTOP && speechSynthesis.speaking && !speechSynthesis.paused){ speechSynthesis.pause(); speechSynthesis.resume(); } }catch(e){} }, 10000);
@@ -1376,31 +1391,31 @@ function say(text, rate=0.8, onend, lang="en-US"){
   const cb = ()=>{ if(fired) return; fired = true; if(onend && tok===TOKEN) onend(); };
   const th = /^th/.test(lang);
   if(th) checkThaiVoice();
-  const go = (retry)=>{
+  const go = (retry=0)=>{   /* retry: 0 first try, 1 second try, 2 last try (by then on an installed voice) */
     if(tok!==TOKEN) return;
     try{
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang; u.rate = Math.min(1.5, rate*speed()*(th?1:1.2)); u.pitch = 1;   /* English a little quicker (was slow for a child who already knows the words) */
       const v = th ? voiceTH : voiceEN; if(v) u.voice = v;
       let started=false;
-      u.onstart = ()=>{ started=true; };
+      u.onstart = ()=>{ started=true; if(isOnline(v)) onlineFails=0; };
       LIVE.add(u);
       u.onend = ()=>{ LIVE.delete(u); cb(); };
       u.onerror = ev=>{
         LIVE.delete(u);
         const why = ev && ev.error;
         /* an online voice failed for a reason other than us stopping it: switch to an installed voice and say it again */
-        if(!retry && isOnline(v) && why!=="interrupted" && why!=="canceled"){ dropOnline(); go(true); return; }
+        if(retry<2 && isOnline(v) && why!=="interrupted" && why!=="canceled"){ dropOnline(); go(retry+1); return; }
         cb();
       };
       speechSynthesis.speak(u);
-      /* an online voice that has not started after 3 seconds is stuck: same fallback */
-      if(!retry && isOnline(v)) setTimeout(()=>{ if(!started && tok===TOKEN && LIVE.has(u)){ LIVE.delete(u); try{ speechSynthesis.cancel(); }catch(e){} dropOnline(); go(true); } }, 3000);
+      /* an online voice that has not started after 7 seconds is stuck: same fallback */
+      if(retry<2 && isOnline(v)) setTimeout(()=>{ if(!started && tok===TOKEN && LIVE.has(u)){ LIVE.delete(u); try{ speechSynthesis.cancel(); }catch(e){} dropOnline(); go(retry+1); } }, 7000);
     }catch(e){ cb(); }
   };
   if(S.mute){ setTimeout(cb, 350); return; }
   const wait = Math.max(0, 200 - (Date.now() - lastCancel));
-  wait ? setTimeout(()=>go(false), wait) : go(false);
+  wait ? setTimeout(()=>go(0), wait) : go(0);
 }
 const sayTH = (t, onend) => say(t, 0.95, onend, "th-TH");
 function hush(){ TOKEN++; try{ speechSynthesis.cancel(); }catch(e){} lastCancel = Date.now(); LIVE.clear(); }
