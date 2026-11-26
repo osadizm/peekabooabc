@@ -1380,7 +1380,7 @@ function say(text, rate=0.8, onend, lang="en-US"){
     if(tok!==TOKEN) return;
     try{
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang; u.rate = Math.min(1.4, rate*speed()); u.pitch = 1;
+      u.lang = lang; u.rate = Math.min(1.5, rate*speed()*(th?1:1.2)); u.pitch = 1;   /* English a little quicker (was slow for a child who already knows the words) */
       const v = th ? voiceTH : voiceEN; if(v) u.voice = v;
       let started=false;
       u.onstart = ()=>{ started=true; };
