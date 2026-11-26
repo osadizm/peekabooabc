@@ -1413,12 +1413,17 @@ function spell(word, boxes, done){
   hush();
   const tok = TOKEN, chars = word.split("");
   boxes.forEach(b=>b.classList.remove("lit","now"));
+  /* safety net: if the voice stops answering for 6 seconds, show every letter. It is re-armed at each letter,
+     so a slow (online) voice never gets its later letters lit before they are spoken */
+  let stall=null; const arm=()=>{ clearTimeout(stall); stall=setTimeout(()=>{ if(tok===TOKEN) boxes.forEach(b=>b.classList.add("lit")); }, 6000); };
+  arm();
   say(word, 0.8, ()=>{
     let i=0;
     const step=()=>{
       if(tok!==TOKEN) return;
+      arm();
       boxes.forEach(b=>b.classList.remove("now"));
-      if(i>=chars.length){ setTimeout(()=>{ if(tok===TOKEN) say(word,0.8,done); },300); return; }
+      if(i>=chars.length){ clearTimeout(stall); setTimeout(()=>{ if(tok===TOKEN) say(word,0.8,done); },300); return; }
       const ch=chars[i], box=boxes[i]; i++;
       if(box) box.classList.add("lit","now");
       if(ch===" "){ step(); return; }
@@ -1426,7 +1431,6 @@ function spell(word, boxes, done){
     };
     setTimeout(step,350);
   });
-  setTimeout(()=>{ if(tok===TOKEN) boxes.forEach(b=>b.classList.add("lit")); }, 1500 + word.length*1300);
 }
 
 /* =================== HELPERS =================== */
