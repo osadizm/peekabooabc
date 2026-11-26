@@ -1269,6 +1269,7 @@ q:[["เพนกวินอยู่ที่ไหน",["ขั้วโล�
 ["ทำไมครอบครัวเพนกวินยืนเบียดกัน",["ให้อบอุ่น","🤗"],["ทะเลาะกัน","😠"],["เล่นซ่อนหา","🙈"]]]}
 ];
 /* =================== SAVED STATE (this device) =================== */
+const APP_VER = "v58";   /* keep the same as VERSION in sw.js */
 const KEY = "kidvocab-v2";
 let S = {off:[], custom:[], upper:false, round:10, stats:{}, prog:{}, days:{}, stickers:{}, storyBest:{}, thOff:[], maMax:10, shapesOff:[], spLevel:"normal", actOff:[], maLevel:"easy", voiceEN:"", voiceTH:"", speed:1};
 try{ const raw = localStorage.getItem(KEY); if(raw) S = Object.assign(S, JSON.parse(raw)); }catch(e){}
@@ -3107,7 +3108,7 @@ function parent(tab="report"){
   PTABS.forEach(([k,l])=>{ const b=el(`<button class="${k===tab?"on":""}">${l}</button>`); b.onclick=()=>parent(k); tabs.append(b); });
   app.append(head);
   ({report:pReport,general:pGeneral,en:pEnglish,th:pThai,ma:pMath,sp:pSpatial,voice:pVoice})[tab]();
-  const done=el(`<div style="text-align:center;margin-top:8px"><button class="next">✅ เสร็จแล้ว กลับหน้าแรก</button></div>`);
+  const done=el(`<div style="text-align:center;margin-top:8px"><button class="next">✅ เสร็จแล้ว กลับหน้าแรก</button><p class="note" style="margin-top:10px">เวอร์ชัน ${APP_VER}</p></div>`);
   done.querySelector("button").onclick=home; app.append(done);
 }
 function pReport(){ app.append(reportPanel()); app.append(backupPanel()); }
