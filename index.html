@@ -371,6 +371,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .book{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:12px;background:rgba(255,255,255,.85);border-radius:22px;padding:18px}
 .book div{aspect-ratio:1;max-width:100%;display:grid;place-items:center;font-size:48px;background:#fff;border-radius:18px;box-shadow:0 4px 0 rgba(107,74,58,.1);position:relative}
 .book div.no{background:#f4ecea}
+.starbox{background:#fff6dc;border:3px dashed var(--ticket-2);border-radius:22px;padding:16px 18px;margin:0 0 16px;text-align:center;font-size:18px}
+.starbox .sline{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.starbox .sbig{font-family:var(--display);font-weight:700;font-size:40px;color:var(--pink-deep)}
+.starbox .sbar{height:16px;background:#fff;border-radius:99px;overflow:hidden;margin:10px 0 4px;box-shadow:inset 0 1px 3px rgba(0,0,0,.12)}
+.starbox .sbar i{display:block;height:100%;background:linear-gradient(90deg,#fcd34d,#f59e0b);border-radius:99px}
+.starbox p{margin:6px 0}
+.starbox .sfull{font-weight:700;color:#16a34a;font-size:20px}
+.starbox button[disabled]{opacity:.45;cursor:default}
+.adj{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.adj b{font-size:22px;min-width:3.2em;text-align:center}
+.adj button[disabled]{opacity:.4;cursor:default}
 .book div.no span{filter:brightness(0) opacity(.12)}
 .book div i{position:absolute;right:6px;bottom:4px;font-style:normal;font-family:var(--display);font-weight:600;font-size:14px;color:var(--pink-deep)}
 
@@ -1465,7 +1476,7 @@ const penLeave = () => S.penLeave!==false, penBad = () => S.penBad!==false;
 function guardLeave(go){
   return ()=>{
     const started = G.active && (G.i>0 || G.locked);
-    if(!started || !penLeave() || !stickerCount()){ G.active=false; hush(); go(); return; }
+    if(!started || !penLeave() || !stickerTotal() || G.act==='story_q'){ G.active=false; hush(); go(); return; }
     if(!G.leaveArmed){
       G.leaveArmed=true;
       toast("ถ้าออกตอนนี้ จะโดนยึดสติกเกอร์ 1 ดวง<br>แตะปุ่มเดิมอีกครั้งเพื่อออก");
@@ -1491,10 +1502,21 @@ function topBar(opts={}){
 }
 function screen(opts){ stopFun(); hush(); app.innerHTML=""; app.append(topBar(opts)); window.scrollTo(0,0); }
 const stickerCount = () => Object.keys(S.stickers).length;
+/* rewards: 5 stickers → 1 star, 30 stars → 100 baht (the parent pays and takes the stars off) */
+const STAR_COST = 5, STAR_GOAL = 30, STAR_BAHT = 100;
+const stickerTotal = () => Object.values(S.stickers).reduce((a,n)=>a+(n>0?n:0),0);
+const starCount = () => Math.max(0, +S.stars||0);
+function giveSticker(){ const fresh=STICKERS.filter(e=>!S.stickers[e]), e=pick1(fresh.length?fresh:STICKERS); S.stickers[e]=(S.stickers[e]||0)+1; return e; }
+/* use up stickers for a star: spare copies first, so the book keeps as many kinds as possible */
+function spendStickers(n){ const used=[];
+  for(let i=0;i<n;i++){ const own=Object.keys(S.stickers).filter(e=>S.stickers[e]>0); if(!own.length) break;
+    const most=Math.max(...own.map(e=>S.stickers[e])), e=pick1(own.filter(e=>S.stickers[e]===most));
+    S.stickers[e]--; if(S.stickers[e]<=0) delete S.stickers[e]; used.push(e); }
+  return used; }
 
 function home(){
   stopFun(); hush(); app.innerHTML=""; window.scrollTo(0,0);
-  const top = el(`<div class="toprow"><button class="chipbtn" id="book">📒 สมุดสติกเกอร์ (${stickerCount()})</button><button class="chipbtn" id="par">👨‍👩‍👧 สำหรับผู้ปกครอง</button></div>`);
+  const top = el(`<div class="toprow"><button class="chipbtn" id="book">📒 สติกเกอร์ ${stickerTotal()} · ⭐ ${starCount()}</button><button class="chipbtn" id="par">👨‍👩‍👧 สำหรับผู้ปกครอง</button></div>`);
   top.querySelector("#book").onclick=stickerBook; top.querySelector("#par").onclick=gate;
   top.prepend(soundBtn());
   app.append(top);
@@ -1505,7 +1527,7 @@ function home(){
     b.onclick=()=>hub(k); g.append(b);
   }
   app.append(g);
-  app.append(el(`<div class="tip">💡 ทุกเกมมีปุ่ม 🔊 ให้ฟังโจทย์ซ้ำ เปิดเสียงลำโพงไว้ด้วย เล่นจบรอบโดยตอบผิดไม่เกิน 1 ครั้ง ได้สติกเกอร์สะสม 1 ดวง</div>`));
+  app.append(el(`<div class="tip">💡 ทุกเกมมีปุ่ม 🔊 ให้ฟังโจทย์ซ้ำ เปิดเสียงลำโพงไว้ด้วย เล่นจบรอบโดยตอบผิดไม่เกิน 1 ครั้ง ได้สติกเกอร์ 1 ดวง · สติกเกอร์ 5 ดวงแลกดาวได้ 1 ดวง · ดาวครบ ${STAR_GOAL} ดวงแลกเงิน ${STAR_BAHT} บาท (นิทานและเกมสนุกไม่มีสติกเกอร์)</div>`));
 }
 
 function hub(sub){
@@ -2463,15 +2485,15 @@ function finish(){
   G.active=false;
   if(G.act==="story_q") S.storyBest[G.cat]=Math.max(S.storyBest[G.cat]||0, s);
   S.days[today()] = (S.days[today()]||0)+1;
-  const W=G.wrong||0, earn = W<=1, bad = !earn && penBad() && s < R*.5, got=[]; let lost="", prize;
-  if(bad){
+  const W=G.wrong||0, story = G.act==="story_q", earn = !story && W<=1, bad = !story && !earn && penBad() && s < R*.5, got=[]; let lost="", prize="";
+  if(story){
+  } else if(bad){
     /* many mistakes: no new sticker, and a 50% chance of losing one */
     if(Math.random()<.5) lost=takeSticker();
     prize = lost ? `รอบนี้ผิดเยอะ โดนยึดสติกเกอร์ <span class="st">${lost}</span> 1 ดวง` : `รอบนี้ผิดเยอะ ไม่ได้สติกเกอร์ <span class="st">🙈</span> แต่รอดตัว ไม่โดนยึด`;
   } else if(earn){
-    const fresh=STICKERS.filter(e=>!S.stickers[e]), e=pick1(fresh.length?fresh:STICKERS);
-    S.stickers[e]=(S.stickers[e]||0)+1; got.push(e);
-    prize = `ได้สติกเกอร์ <span class="st">${got.join(" ")}</span>`;
+    got.push(giveSticker());
+    prize = `ได้สติกเกอร์ <span class="st">${got.join(" ")}</span>`+(stickerTotal()>=STAR_COST?`<br><small>มี ${stickerTotal()} ดวงแล้ว ไปแลกดาวได้!</small>`:"");
   } else {
     prize = `รอบนี้ตอบผิด ${W} ครั้ง ยังไม่ได้สติกเกอร์ <span class="st">🙈</span>`;
   }
@@ -2480,7 +2502,7 @@ function finish(){
   screen({stars:true, back:backOf(act)});
   const e=el(`<div class="end"><h2 class="outline">${msg}</h2><div class="big">${"⭐".repeat(Math.max(1,Math.round(s/R*5)))}</div>
     <p style="font-size:20px;margin:0">ตอบถูกในครั้งแรก ${s} จาก ${R} ข้อ<br>${def.th}${act==="story_q" ? " · "+esc(STORIES[cat].t) : cat ? " · "+(cat==="mix"?"รวมทุกหมวด":CAT[cat].th) : ""}</p>
-    <div class="prize ${earn?"":"lost"}">${prize}</div>${earn?"":`<p style="font-size:17px;margin:10px 0 0">ตอบผิดไม่เกิน 1 ครั้ง จะได้สติกเกอร์นะ ลองใหม่อีกครั้ง!</p>`}
+    ${story?"":`<div class="prize ${earn?"":"lost"}">${prize}</div>${earn?"":`<p style="font-size:17px;margin:10px 0 0">ตอบผิดไม่เกิน 1 ครั้ง จะได้สติกเกอร์นะ ลองใหม่อีกครั้ง!</p>`}`}
     <div class="acts2"><button class="next">🔁 เล่นอีกครั้ง</button><button class="chipbtn" id="b2">📒 สมุดสติกเกอร์</button><button class="chipbtn" id="b3"><i class="chev l"></i>เลือกเกมอื่น</button></div></div>`);
   e.querySelector(".next").onclick=()=>start(act,cat);
   e.querySelector("#b2").onclick=stickerBook;
@@ -2519,13 +2541,11 @@ function funFinish(k, good, line){
   stopFun();
   S.days[today()] = (S.days[today()]||0)+1;
   const pr=S.prog["fun_"+k]||(S.prog["fun_"+k]={r:0,t:0}); pr.t++; if(good) pr.r++;
-  const got=[]; if(good){ const fresh=STICKERS.filter(e=>!S.stickers[e]), e=pick1(fresh.length?fresh:STICKERS); S.stickers[e]=(S.stickers[e]||0)+1; got.push(e); }
   save();
   const home=FUNS[k].home||"fun";
   screen({back:()=>hub(home),backLabel:SUBJ[home].th});
   const e=el(`<div class="end"><h2 class="outline">${good?"สุดยอดเลย!":"เก่งมาก!"}</h2><div class="big">${good?"⭐⭐⭐":"⭐⭐"}</div>
     <p style="font-size:20px;margin:0">${line}<br>${FUNS[k].th}</p>
-    <div class="prize ${good?"":"lost"}">${good?`ได้สติกเกอร์ <span class="st">${got.join(" ")}</span>`:`ยังไม่ได้สติกเกอร์ <span class="st">🙈</span> ลองอีกครั้งนะ`}</div>
     <div class="acts2"><button class="next">🔁 เล่นอีกครั้ง</button><button class="chipbtn" id="b2">📒 สมุดสติกเกอร์</button><button class="chipbtn" id="b3"><i class="chev l"></i>${SUBJ[home].th}</button></div></div>`);
   e.querySelector(".next").onclick=()=>playFun(k); e.querySelector("#b2").onclick=stickerBook; e.querySelector("#b3").onclick=()=>hub(home);
   app.append(e); say(good?"Excellent!":"Well done!",0.9);
@@ -2975,7 +2995,18 @@ function wordSearch(k){
 /* =================== STICKER BOOK =================== */
 function stickerBook(){
   screen({});
-  app.append(el(`<div class="hubhead"><h2 class="outline">📒 สมุดสติกเกอร์</h2><p>สะสมแล้ว ${stickerCount()} จาก ${STICKERS.length} แบบ</p></div>`));
+  app.append(el(`<div class="hubhead"><h2 class="outline">📒 สมุดสติกเกอร์</h2><p>มีสติกเกอร์ ${stickerTotal()} ดวง · สะสมแล้ว ${stickerCount()} จาก ${STICKERS.length} แบบ</p></div>`));
+  const st=starCount(), full=st>=STAR_GOAL;
+  const sb=el(`<div class="starbox">
+    <div class="sline"><span class="sbig">⭐ ${st}</span><span>ครบ ${STAR_GOAL} ดาว แลกเงิน ${STAR_BAHT} บาท 💰</span></div>
+    <div class="sbar"><i style="width:${Math.min(100,st/STAR_GOAL*100)}%"></i></div>
+    ${full?`<p class="sfull">🎉 ครบ ${STAR_GOAL} ดาวแล้ว! ไปบอกพ่อแม่ แลกเงิน ${STAR_BAHT} บาทได้เลย</p>`:`<p>อีก ${STAR_GOAL-st} ดาว จะได้เงิน ${STAR_BAHT} บาท</p>`}
+    <button class="next" ${stickerTotal()<STAR_COST?"disabled":""}>แลกสติกเกอร์ ${STAR_COST} ดวง → ⭐ 1 ดวง</button>
+    ${stickerTotal()<STAR_COST?`<p>สะสมสติกเกอร์อีก ${STAR_COST-stickerTotal()} ดวง จะแลกดาวได้</p>`:""}</div>`);
+  sb.querySelector("button").onclick=()=>{ if(stickerTotal()<STAR_COST) return;
+    const used=spendStickers(STAR_COST); S.stars=starCount()+1; save(); stickerBook();
+    toast(`แลก ${used.join(" ")} ได้ ⭐ 1 ดวง!`); say("Great! You got a star!",0.9); };
+  app.append(sb);
   const b=el(`<div class="book"></div>`);
   STICKERS.forEach(e=>{ const n=S.stickers[e]||0; b.append(el(`<div class="${n?"":"no"}"><span>${e}</span>${n>1?`<i>×${n}</i>`:""}</div>`)); });
   app.append(b);
@@ -2994,7 +3025,7 @@ function gate(){
   app.append(g);
 }
 function reportPanel(){
-  const p=el(`<div class="panel"><h3>📊 ความก้าวหน้าของลูก</h3><p>นับเฉพาะข้อที่ตอบถูกในครั้งแรก</p><h4>เล่นใน 7 วันล่าสุด</h4><div class="days"></div><h4>คะแนนแต่ละเกม</h4><div class="tablewrap"><table class="rep"></table></div><h4>คำศัพท์ภาษาอังกฤษ</h4><div class="engsum"></div><div class="row" style="margin-top:14px"><button class="mini danger" id="resetp">ล้างความก้าวหน้า</button><button class="mini danger" id="resets">ล้างสติกเกอร์</button></div><p class="note" style="margin-top:8px">ล้างความก้าวหน้า: ลบคะแนน วันที่เล่น และคำที่ยังต้องฝึก (สติกเกอร์ยังอยู่)<br>ล้างสติกเกอร์: ลบสติกเกอร์ที่สะสมไว้ทั้งหมด</p></div>`);
+  const p=el(`<div class="panel"><h3>📊 ความก้าวหน้าของลูก</h3><p>นับเฉพาะข้อที่ตอบถูกในครั้งแรก</p><h4>เล่นใน 7 วันล่าสุด</h4><div class="days"></div><h4>คะแนนแต่ละเกม</h4><div class="tablewrap"><table class="rep"></table></div><h4>คำศัพท์ภาษาอังกฤษ</h4><div class="engsum"></div><div class="row" style="margin-top:14px"><button class="mini danger" id="resetp">ล้างความก้าวหน้า</button><button class="mini danger" id="resets">ล้างสติกเกอร์และดาว</button></div><p class="note" style="margin-top:8px">ล้างความก้าวหน้า: ลบคะแนน วันที่เล่น และคำที่ยังต้องฝึก (สติกเกอร์ยังอยู่)<br>ล้างสติกเกอร์: ลบสติกเกอร์ที่สะสมไว้ทั้งหมด</p></div>`);
   const days=p.querySelector(".days"), dn=["อา","จ","อ","พ","พฤ","ศ","ส"];
   for(let k=6;k>=0;k--){ const d=new Date(); d.setDate(d.getDate()-k); const n=S.days[today(d)]||0;
     days.append(el(`<div><b class="${n?"on":""}">${n||"–"}</b>${k===0?"วันนี้":dn[d.getDay()]}</div>`)); }
@@ -3013,7 +3044,7 @@ function reportPanel(){
     if(!btn.dataset.ask){ btn.dataset.ask=1; btn.textContent="แตะอีกครั้งเพื่อยืนยัน"; setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.ask; btn.textContent=label; } },3000); return; }
     act(); save(); parent("report"); }; };
   twoTap(p.querySelector("#resetp"),"ล้างความก้าวหน้า",()=>{ S.stats={}; S.prog={}; S.days={}; });
-  twoTap(p.querySelector("#resets"),"ล้างสติกเกอร์",()=>{ S.stickers={}; });
+  twoTap(p.querySelector("#resets"),"ล้างสติกเกอร์และดาว",()=>{ S.stickers={}; S.stars=0; });
   return p;
 }
 
@@ -3108,13 +3139,29 @@ function pGeneral(){
   const p=el(`<div class="panel"><h3>จำนวนข้อต่อรอบ</h3><p>ใช้กับทุกเกมในทุกวิชา</p></div>`);
   p.append(segGroup("round",[[5,"5 ข้อ"],[10,"10 ข้อ"],[15,"15 ข้อ"],[20,"20 ข้อ"]],S.round,v=>{S.round=+v;save();}));
   app.append(p);
-  const pen=el(`<div class="panel"><h3>กติกาสติกเกอร์</h3><p>ได้ 1 ดวงเมื่อเล่นจบรอบโดยตอบผิดไม่เกิน 1 ครั้ง (ผิด 2 ครั้งขึ้นไปไม่ได้) · เกมสนุก ๆ ได้ 1 ดวงเมื่อพลาดไม่เกิน 1 ครั้ง (เกมจับคู่ภาพ นับจากจำนวนครั้งที่เปิด)</p></div>`);
+  const pen=el(`<div class="panel"><h3>กติกาสติกเกอร์</h3><p>ได้ 1 ดวงเมื่อเล่นจบรอบโดยตอบผิดไม่เกิน 1 ครั้ง (ผิด 2 ครั้งขึ้นไปไม่ได้)<br>
+    สติกเกอร์ ${STAR_COST} ดวงแลกดาวได้ 1 ดวง (ลูกกดแลกเองในสมุดสติกเกอร์) · ดาวครบ ${STAR_GOAL} ดวงแลกเงิน ${STAR_BAHT} บาท<br>
+    นิทานและเกมสนุก (รวมเกมหาคำ ปริศนาตัวเลข ตารางภาพ) ไม่มีสติกเกอร์ และไม่ยึดสติกเกอร์</p></div>`);
   pen.append(el(`<h4>ออกจากเกมกลางรอบ (กดย้อนกลับหรือหน้าแรก)</h4>`));
   pen.append(segGroup("penleave",[["on","ยึด 1 ดวง"],["off","ไม่ยึด"]],penLeave()?"on":"off",v=>{S.penLeave=v==="on";save();}));
   pen.append(el(`<p class="note" style="margin-top:6px">แตะออกครั้งแรกจะเตือนก่อน ถ้ายังไม่ได้ตอบข้อแรกออกได้โดยไม่โดนยึด</p>`));
   pen.append(el(`<h4>ตอบถูกน้อยกว่าครึ่งในรอบนั้น</h4>`));
   pen.append(segGroup("penbad",[["on","ลุ้นโดนยึด 50%"],["off","ไม่ยึด"]],penBad()?"on":"off",v=>{S.penBad=v==="on";save();}));
   app.append(pen);
+  const rw=el(`<div class="panel"><h3>⭐ ปรับดาวและสติกเกอร์</h3><p>เพิ่มหรือลดเองได้ เช่น ให้รางวัลพิเศษ หรือหักเมื่อทำผิดข้อตกลง</p>
+    <div class="adj"><span style="min-width:6em">ดาว</span><button class="chipbtn" data-k="s-">➖</button><b id="v-s"></b><button class="chipbtn" data-k="s+">➕</button></div>
+    <div class="adj"><span style="min-width:6em">สติกเกอร์</span><button class="chipbtn" data-k="t-">➖</button><b id="v-t"></b><button class="chipbtn" data-k="t+">➕</button></div>
+    <div class="adj"><button class="chipbtn" data-k="pay" style="background:var(--pink);color:#fff">💰 จ่ายเงิน ${STAR_BAHT} บาทแล้ว (หัก ${STAR_GOAL} ดาว)</button></div>
+    <p class="note" id="v-n"></p></div>`);
+  const show=()=>{ rw.querySelector("#v-s").textContent=starCount(); rw.querySelector("#v-t").textContent=stickerTotal();
+    rw.querySelector('[data-k="pay"]').disabled=starCount()<STAR_GOAL;
+    rw.querySelector("#v-n").textContent=(S.paid?`แลกเงินไปแล้ว ${S.paid} ครั้ง (รวม ${S.paid*STAR_BAHT} บาท) · `:"")+(starCount()>=STAR_GOAL?`ครบ ${STAR_GOAL} ดาวแล้ว`:`อีก ${STAR_GOAL-starCount()} ดาวจะครบ ${STAR_GOAL}`); };
+  rw.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const k=b.dataset.k;
+    if(k==="s+") S.stars=starCount()+1; else if(k==="s-") S.stars=Math.max(0,starCount()-1);
+    else if(k==="t+") giveSticker(); else if(k==="t-") takeSticker();
+    else if(k==="pay" && starCount()>=STAR_GOAL){ S.stars=starCount()-STAR_GOAL; S.paid=(S.paid||0)+1; toast(`บันทึกแล้ว หัก ${STAR_GOAL} ดาว 💰`); }
+    save(); show(); });
+  show(); app.append(rw);
   const g=el(`<div class="panel"><h3>เกมที่เปิดให้เล่น</h3><p>เกมที่ปิด (สีเทา) จะไม่แสดงให้ลูกเห็น เหมาะกับเรื่องที่ยังไม่ได้สอน</p></div>`);
   for(const [sub,s] of Object.entries(SUBJ)){
     const items = LEARN.filter(l=>l.sub===sub).map(l=>({key:l.id,label:l.th,icon:"📖",on:actOn(l.id)}))
