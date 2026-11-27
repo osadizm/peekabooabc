@@ -685,7 +685,18 @@ const FACE_ART=(rg)=>`<svg class="shp drawn" viewBox="0 0 100 100" aria-hidden="
     ${rg}</svg>`;
 const DRAWN = {
   eyebrow:  FACE_ART(ring(34,30,16,11)),
-  lips:     FACE_ART(ring(50,75,21,14)),
+  /* glossy red lips with a friendly smile (hand drawn, same on every device) */
+  lips: `<svg class="shp drawn" viewBox="0 0 100 100" aria-hidden="true"><defs>
+    <linearGradient id="lipU" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f43f4e"/><stop offset="1" stop-color="#c81e2e"/></linearGradient>
+    <linearGradient id="lipL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e11d2e"/><stop offset="1" stop-color="#a5101d"/></linearGradient></defs>
+    <path d="M6 48 C20 56 34 61 50 61 C66 61 80 56 94 48 C88 68 70 80 50 80 C30 80 12 68 6 48 Z" fill="url(#lipL)"/>
+    <path d="M10 48.5 C24 45 38 44 50 45 C62 44 76 45 90 48.5 C78 57 64 60 50 60 C36 60 22 57 10 48.5 Z" fill="#5b1218"/>
+    <path d="M16 48 C30 45 42 44.5 50 45 C58 44.5 70 45 84 48 L81 53.5 C68 56 32 56 19 53.5 Z" fill="#fff"/>
+    <path d="M30 46 V55 M40 45 V56 M50 45 V56.5 M60 45 V56 M70 46 V55" stroke="#d9d4cf" stroke-width="1.2"/>
+    <path d="M6 48 C14 36 26 26 38 27 C44 27.5 48 31 50 33 C52 31 56 27.5 62 27 C74 26 86 36 94 48 C78 45 64 43 50 44.5 C36 43 22 45 6 48 Z" fill="url(#lipU)"/>
+    <ellipse cx="34" cy="35" rx="9" ry="3.2" fill="#fff" opacity=".45" transform="rotate(-12 34 35)"/>
+    <ellipse cx="64" cy="35" rx="7" ry="2.6" fill="#fff" opacity=".35" transform="rotate(10 64 35)"/>
+    <ellipse cx="46" cy="70" rx="13" ry="3.6" fill="#fff" opacity=".4"/></svg>`,
   knee:     KNEE_ART,
   elbow:    mark("💪", 21, 80, 40),   /* 💪: fist on top, forearm down the left side, elbow at the bottom-left corner */
   palm:     mark("✋", 50, 62, 46),
@@ -1269,7 +1280,7 @@ q:[["เพนกวินอยู่ที่ไหน",["ขั้วโล�
 ["ทำไมครอบครัวเพนกวินยืนเบียดกัน",["ให้อบอุ่น","🤗"],["ทะเลาะกัน","😠"],["เล่นซ่อนหา","🙈"]]]}
 ];
 /* =================== SAVED STATE (this device) =================== */
-const APP_VER = "v58";   /* keep the same as VERSION in sw.js */
+const APP_VER = "v59";   /* keep the same as VERSION in sw.js */
 const KEY = "kidvocab-v2";
 let S = {off:[], custom:[], upper:false, round:10, stats:{}, prog:{}, days:{}, stickers:{}, storyBest:{}, thOff:[], maMax:10, shapesOff:[], spLevel:"normal", actOff:[], maLevel:"easy", voiceEN:"", voiceTH:"", speed:1};
 try{ const raw = localStorage.getItem(KEY); if(raw) S = Object.assign(S, JSON.parse(raw)); }catch(e){}
